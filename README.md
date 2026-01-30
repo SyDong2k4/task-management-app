@@ -109,16 +109,16 @@ Hệ thống Socket.io hoạt động song song với REST API để đảm bả
 
 Đã thực hiện kiểm thử thủ công (Manual Testing) toàn diện:
 
-### ✅ Kết nối Database
+###  Kết nối Database
 -   MongoDB kết nối thành công qua Mongoose.
 -   Schema Validation hoạt động đúng (báo lỗi khi thiếu required fields).
 
-### ✅ API Testing (Postman)
+###  API Testing (Postman)
 -   Đăng ký/Đăng nhập: Token được sinh ra chính xác.
 -   CRUD Board: Tạo bảng, thêm thành viên thành công.
 -   Bảo mật: Truy cập route `/api/boards` không có Token bị từ chối (401 Unauthorized).
 
-### ✅ Socket Testing
+###  Socket Testing
 -   Client giả lập kết nối thành công với Token.
 -   User gia nhập đúng room.
 -   Sự kiện `card:moved` được emit và nhận phản hồi đúng định dạng.
