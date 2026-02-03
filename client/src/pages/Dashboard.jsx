@@ -1,34 +1,73 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { useAuth } from '../context/AuthContext';
-import { Button } from '../components/common/Button';
+import BoardList from '../components/dashboard/BoardList';
+import CreateBoardModal from '../components/dashboard/CreateBoardModal';
+import boardService from '../services/boardService';
 
 const Container = styled.div`
-  padding: 2rem;
+  width: 100%;
 `;
 
-const Header = styled.header`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+const Header = styled.div`
   margin-bottom: 2rem;
 `;
 
+const Title = styled.h1`
+  font-size: 2rem;
+  font-weight: 700;
+  color: ${props => props.theme.colors.text};
+`;
+
+const Subtitle = styled.p`
+  color: ${props => props.theme.colors.textSecondary};
+  margin-top: 0.5rem;
+`;
+
 const Dashboard = () => {
-    const { user, logout } = useAuth();
+    const [boards, setBoards] = useState([]);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchBoards();
+    }, []);
+
+    const fetchBoards = async () => {
+        try {
+            const data = await boardService.getAllBoards();
+            setBoards(data);
+        } catch (error) {
+            console.error("Failed to fetch boards", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleBoardCreated = (newBoard) => {
+        setBoards([...boards, newBoard]);
+    };
 
     return (
         <Container>
             <Header>
-                <h1>Dashboard</h1>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <span>Welcome, {user?.username}</span>
-                    <Button onClick={logout}>Logout</Button>
-                </div>
+                <Title>Your Boards</Title>
+                <Subtitle>Select a board to start working</Subtitle>
             </Header>
-            <div>
-                <p>Your boards will appear here.</p>
-            </div>
+
+            {loading ? (
+                <div>Loading boards...</div>
+            ) : (
+                <BoardList
+                    boards={boards}
+                    onOpenCreateModal={() => setIsModalOpen(true)}
+                />
+            )}
+
+            <CreateBoardModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onBoardCreated={handleBoardCreated}
+            />
         </Container>
     );
 };

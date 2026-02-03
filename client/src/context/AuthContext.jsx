@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
     const login = async (credentials) => {
         try {
             const data = await authService.login(credentials);
-            setUser(data.user); // Assuming response contains user object
+            setUser(data);
             setError(null);
             return data;
         } catch (err) {
@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }) => {
     const register = async (userData) => {
         try {
             const data = await authService.register(userData);
-            setUser(data.user);
+            setUser(data);
             setError(null);
             return data;
         } catch (err) {
