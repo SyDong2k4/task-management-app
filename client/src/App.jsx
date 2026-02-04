@@ -8,6 +8,7 @@ import { SocketProvider } from './context/SocketContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import Board from './pages/Board';
 import PrivateRoute from './components/common/PrivateRoute';
 import MainLayout from './components/layout/MainLayout';
 
@@ -25,6 +26,7 @@ function App() {
               <Route element={<PrivateRoute />}>
                 <Route element={<MainLayout />}>
                   <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/board/:boardId" element={<Board />} />
                 </Route>
               </Route>
 
