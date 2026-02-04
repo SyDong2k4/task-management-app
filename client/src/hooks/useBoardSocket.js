@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useSocket } from '../context/SocketContext';
+import { toast } from 'react-toastify';
 
 const useBoardSocket = (boardId, callbacks = {}) => {
     const socket = useSocket();
@@ -23,9 +24,20 @@ const useBoardSocket = (boardId, callbacks = {}) => {
         ];
 
         events.forEach(event => {
-            if (callbacks[event]) {
-                socket.on(event, callbacks[event]);
-            }
+            socket.on(event, (data) => {
+                // Check if there is a specific callback
+                if (callbacks[event]) {
+                    callbacks[event](data);
+                }
+
+                // Default notification logic (could be refined to avoid duplicate toasts if callback also notifies)
+                // For now, let's just log and toast specific interesting events
+                if (event === 'card:created') toast.success('New card created!');
+                if (event === 'column:created') toast.success('New column created!');
+                if (event === 'card:moved') {
+                    // Optional: toast.info('Card moved'); 
+                }
+            });
         });
 
         // Cleanup

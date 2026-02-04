@@ -1,6 +1,6 @@
 ````carousel
 # Ứng Dụng Quản Lý Công Việc (Task Management App)
-## Báo Cáo Tiến Độ: Tuần 1 & 2
+## Báo Cáo Tiến Độ: Tuần 1, 2 & 3
 ### Triển khai & Kiểm thử Backend
 **Ngày báo cáo**: 30/01/2026
 **Trạng thái**: Hoàn thành (Completed)
@@ -9,7 +9,7 @@
 ---
 
 ### Tóm tắt (Executive Summary)
-Trong 2 tuần đầu tiên, đội ngũ đã tập trung xây dựng nền tảng **Backend** vững chắc cho ứng dụng. Hệ thống được xây dựng trên kiến trúc **MERN Stack**, ưu tiên khả năng mở rộng (scalability) và tính năng thời gian thực (real-time) ngay từ cốt lõi. Hiện tại, Server đã sẵn sàng với đầy đủ API cho việc xác thực và quản lý công việc, cùng với hệ thống Socket.io hoạt động ổn định.
+Trong 3 tuần làm việc, đội ngũ đã hoàn thành nền tảng **Backend** và cơ bản về **Frontend**. Hệ thống Backend (Node.js/Express) hoạt động ổn định với đầy đủ API và Socket.io. Phía Frontend (React) đã hoàn thiện Authentication, Dashboard, và tích hợp Real-time Socket. Người dùng hiện có thể đăng nhập, tạo bảng, và thấy trạng thái kết nối trực tuyến trên giao diện Board. tuần tiếp theo sẽ tập trung vào tính năng cốt lõi: Kéo thả (Drag & Drop) thẻ công việc.
 <!-- slide -->
 # 1. Tổng Quan Kiến Trúc (Architecture Overview)
 
@@ -129,16 +129,17 @@ Hệ thống Socket.io hoạt động song song với REST API để đảm bả
 
 **Trọng tâm**: Phát triển Frontend (React.js) và Tích hợp.
 
-1.  **Khởi tạo UI**:
-    -   Thiết lập dự án React với TailwindCSS (nếu cần) hoặc CSS Modules.
-    -   Cấu hình React Router cho điều hướng.
-2.  **Authentication Pages**:
-    -   Giao diện Login / Register đẹp mắt.
-    -   Xử lý lưu trữ Token (LocalStorage/Cookie).
-3.  **Dashboard & Kanban View**:
-    -   Hiển thị danh sách bảng.
-    -   Xây dựng giao diện Drag & Drop (sử dụng thư viện như `dnd-kit` hoặc `react-beautiful-dnd`).
-4.  **Tích hợp**:
-    -   Kết nối Axios với Backend API.
-    -   Lắng nghe sự kiện Socket.io để cập nhật UI.
+1.  **✅ Khởi tạo UI**:
+    -   ✅ Thiết lập dự án React với CSS Modules/Styled Components.
+    -   ✅ Cấu hình React Router cho điều hướng.
+2.  **✅ Authentication Pages**:
+    -   ✅ Giao diện Login / Register đẹp mắt.
+    -   ✅ Xử lý lưu trữ Token (LocalStorage/Cookie).
+3.  **🔄 Dashboard & Kanban View**:
+    -   ✅ Hiển thị danh sách bảng.
+    -   ✅ Trang chi tiết bảng (`/board/:id`).
+    -   ⬜ Xây dựng giao diện Drag & Drop.
+4.  **✅ Tích hợp**:
+    -   ✅ Kết nối Axios với Backend API.
+    -   ✅ Lắng nghe sự kiện Socket.io để cập nhật UI.
 ````

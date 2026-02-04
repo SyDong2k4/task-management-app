@@ -124,19 +124,21 @@ Hệ thống Socket.io hoạt động song song với REST API để đảm bả
 -   Sự kiện `card:moved` được emit và nhận phản hồi đúng định dạng.
 
 <!-- slide -->
-# 6. Kế Hoạch Tuần Tiếp Theo (Tuần 3)
+# 6. Báo Cáo Tiến Độ: Tuần 3 (Frontend & Integration)
 
 **Trọng tâm**: Phát triển Frontend (React.js) và Tích hợp.
 
-1.  **Khởi tạo UI**:
-    -   Thiết lập dự án React với TailwindCSS (nếu cần) hoặc CSS Modules.
-    -   Cấu hình React Router cho điều hướng.
-2.  **Authentication Pages**:
-    -   Giao diện Login / Register đẹp mắt.
-    -   Xử lý lưu trữ Token (LocalStorage/Cookie).
-3.  **Dashboard & Kanban View**:
-    -   Hiển thị danh sách bảng.
-    -   Xây dựng giao diện Drag & Drop (sử dụng thư viện như `dnd-kit` hoặc `react-beautiful-dnd`).
-4.  **Tích hợp**:
-    -   Kết nối Axios với Backend API.
-    -   Lắng nghe sự kiện Socket.io để cập nhật UI.
+1.  **✅ Khởi tạo UI**:
+    -   ✅ Thiết lập dự án React với CSS Modules/Styled Components.
+    -   ✅ Cấu hình React Router cho điều hướng.
+2.  **✅ Authentication Pages**:
+    -   ✅ Giao diện Login / Register đẹp mắt.
+    -   ✅ Xử lý lưu trữ Token (LocalStorage/Cookie).
+3.  **🔄 Dashboard & Kanban View**:
+    -   ✅ Hiển thị danh sách bảng.
+    -   ✅ Tạo trang chi tiết bảng (`/board/:id`).
+    -   ⬜ Xây dựng giao diện Drag & Drop (đang phát triển).
+4.  **✅ Tích hợp**:
+    -   ✅ Kết nối Axios với Backend API.
+    -   ✅ Thiết lập `SocketContext` và `SocketProvider`.
+    -   ✅ Lắng nghe sự kiện Socket.io (Real-time updates).
