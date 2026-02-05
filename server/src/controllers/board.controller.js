@@ -1,5 +1,7 @@
 const Board = require('../models/Board');
 const User = require('../models/User');
+const Column = require('../models/Column');
+const Card = require('../models/Card');
 
 // @desc    Create new board
 // @route   POST /api/boards
@@ -58,7 +60,16 @@ const getBoardById = async (req, res) => {
             return res.status(403).json({ message: 'Not authorized to view this board' });
         }
 
-        res.json(board);
+        // Fetch columns and cards
+        const columns = await Column.find({ boardId: board._id }).sort('order');
+        const cards = await Card.find({ boardId: board._id }).sort('order');
+
+        const columnsWithCards = columns.map(col => {
+            const colCards = cards.filter(card => card.columnId.toString() === col._id.toString());
+            return { ...col.toObject(), cards: colCards };
+        });
+
+        res.json({ ...board.toObject(), columns: columnsWithCards });
     } catch (error) {
         console.error(error);
         if (error.kind === 'ObjectId') {

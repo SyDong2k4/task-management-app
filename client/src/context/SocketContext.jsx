@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import io from 'socket.io-client';
 import { useAuth } from './AuthContext';
+import socketService from '../services/socketService';
 
 const SocketContext = createContext();
 
@@ -14,29 +14,17 @@ export const SocketProvider = ({ children }) => {
 
     useEffect(() => {
         if (token && user) {
-            const newSocket = io('http://localhost:5000', {
-                auth: { token },
-            });
-
-            newSocket.on('connect', () => {
-                console.log('Socket connected:', newSocket.id);
-            });
-
-            newSocket.on('connect_error', (err) => {
-                console.error('Socket connection error:', err.message);
-            });
-
+            const newSocket = socketService.connect(token);
             setSocket(newSocket);
 
             return () => {
-                newSocket.close();
+                socketService.disconnect();
                 setSocket(null);
             };
         } else {
-            if (socket) {
-                socket.close();
-                setSocket(null);
-            }
+            // User logged out or init
+            socketService.disconnect();
+            setSocket(null);
         }
     }, [token, user]);
 

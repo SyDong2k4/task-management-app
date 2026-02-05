@@ -28,6 +28,9 @@ const createColumn = async (req, res) => {
             order: count
         });
 
+        const io = req.app.get('io');
+        io.to(boardId).emit('column:created', column);
+
         res.status(201).json(column);
     } catch (error) {
         console.error(error);
@@ -50,6 +53,9 @@ const updateColumn = async (req, res) => {
         column.title = title || column.title;
         await column.save();
 
+        const io = req.app.get('io');
+        io.to(column.boardId.toString()).emit('column:updated', column);
+
         res.json(column);
     } catch (error) {
         console.error(error);
@@ -68,10 +74,16 @@ const deleteColumn = async (req, res) => {
             return res.status(404).json({ message: 'Column not found' });
         }
 
+        const boardId = column.boardId.toString();
+        const columnId = column._id;
+
         await column.deleteOne();
 
         // Ideally, also delete all cards in this column
         // await Card.deleteMany({ columnId: req.params.id });
+
+        const io = req.app.get('io');
+        io.to(boardId).emit('column:deleted', columnId);
 
         res.json({ message: 'Column removed' });
     } catch (error) {
@@ -86,6 +98,7 @@ const deleteColumn = async (req, res) => {
 const reorderColumns = async (req, res) => {
     try {
         const { columnIds } = req.body; // Array of column IDs in new order
+        const { boardId } = req.params;
 
         if (!columnIds || !Array.isArray(columnIds)) {
             return res.status(400).json({ message: 'Invalid data' });
@@ -96,6 +109,9 @@ const reorderColumns = async (req, res) => {
         });
 
         await Promise.all(updates);
+
+        const io = req.app.get('io');
+        io.to(boardId).emit('column:reordered', columnIds);
 
         res.json({ message: 'Columns reordered' });
     } catch (error) {

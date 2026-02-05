@@ -24,6 +24,9 @@ const createCard = async (req, res) => {
             order: count
         });
 
+        const io = req.app.get('io');
+        io.to(boardId).emit('card:created', card);
+
         res.status(201).json(card);
     } catch (error) {
         console.error(error);
@@ -72,6 +75,9 @@ const updateCard = async (req, res) => {
 
         await card.save();
 
+        const io = req.app.get('io');
+        io.to(card.boardId.toString()).emit('card:updated', card);
+
         res.json(card);
     } catch (error) {
         console.error(error);
@@ -91,16 +97,24 @@ const moveCard = async (req, res) => {
             return res.status(404).json({ message: 'Card not found' });
         }
 
-        // Logic to shift other cards if necessary is complex for backend only without bulk updates from frontend
-        // Assuming frontend sends the new state or we just update this single card properties
+        // Keep old values to detect changes
+        const oldColumnId = card.columnId;
+        const oldOrder = card.order;
 
         card.columnId = columnId || card.columnId;
         card.order = order !== undefined ? order : card.order;
 
         await card.save();
 
-        // In a real app, you'd likely want to shift orders of other cards in the destination column
-        // But for simplicity of this request, we update this one.
+        // If moved columns, we might need to notify about that
+        const io = req.app.get('io');
+        io.to(card.boardId.toString()).emit('card:moved', {
+            cardId: card._id,
+            columnId: card.columnId,
+            oldColumnId,
+            order: card.order,
+            card // send full card just in case
+        });
 
         res.json(card);
     } catch (error) {
@@ -117,7 +131,14 @@ const deleteCard = async (req, res) => {
         const card = await Card.findById(req.params.id);
         if (!card) return res.status(404).json({ message: 'Card not found' });
 
+        const boardId = card.boardId.toString(); // Save before delete
+        const cardId = card._id;
+
         await card.deleteOne();
+
+        const io = req.app.get('io');
+        io.to(boardId).emit('card:deleted', cardId);
+
         res.json({ message: 'Card removed' });
     } catch (error) {
         console.error(error);

@@ -18,6 +18,7 @@ const server = http.createServer(app);
 
 // Initialize Socket.io
 const io = initSocket(server);
+app.set('io', io);
 
 // Middleware
 app.use(cors());
