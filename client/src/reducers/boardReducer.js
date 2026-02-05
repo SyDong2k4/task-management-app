@@ -34,6 +34,8 @@ export const boardReducer = (state, action) => {
                 ...state,
                 columns: state.columns.map(col => {
                     if (col._id === action.payload.columnId) {
+                        const exists = col.cards?.some(c => c._id === action.payload._id);
+                        if (exists) return col;
                         return {
                             ...col,
                             cards: [...(col.cards || []), action.payload]

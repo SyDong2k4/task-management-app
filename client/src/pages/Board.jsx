@@ -360,7 +360,11 @@ const Board = () => {
                 <Canvas>
                     <SortableContext items={columnIds} strategy={horizontalListSortingStrategy}>
                         {board.columns && board.columns.map(column => (
-                            <Column key={column._id} column={column} />
+                            <Column
+                                key={column._id}
+                                column={column}
+                                onCardAdded={(card) => dispatch({ type: 'ADD_CARD', payload: card })}
+                            />
                         ))}
                     </SortableContext>
 

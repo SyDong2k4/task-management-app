@@ -54,7 +54,7 @@ const AddCardButton = styled.button`
   }
 `;
 
-const Column = ({ column }) => {
+const Column = ({ column, onCardAdded }) => {
     const { boardId } = useParams();
     const [showAddCard, setShowAddCard] = useState(false);
     const [newCardTitle, setNewCardTitle] = useState('');
@@ -83,13 +83,13 @@ const Column = ({ column }) => {
 
         try {
             setLoading(true);
-            await boardService.createCard(boardId, {
+            const newCard = await boardService.createCard(boardId, {
                 title: newCardTitle,
                 columnId: column._id
             });
+            if (onCardAdded) onCardAdded(newCard);
             setNewCardTitle('');
             setShowAddCard(false);
-            // Socket will handle the update via board:updated or card:created
         } catch (error) {
             console.error("Failed to add card", error);
         } finally {
