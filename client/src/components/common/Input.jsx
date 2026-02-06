@@ -1,34 +1,30 @@
-import styled from 'styled-components';
+import React from 'react';
 
-export const InputGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 1rem;
-`;
+export const InputGroup = ({ children, className, ...props }) => (
+  <div className={`flex flex-col mb-4 ${className || ''}`} {...props}>
+    {children}
+  </div>
+);
 
-export const Label = styled.label`
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: ${props => props.theme.colors.text};
-  margin-bottom: 0.5rem;
-`;
+export const Label = ({ children, className, ...props }) => (
+  <label className={`text-sm font-medium text-slate-800 mb-2 block ${className || ''}`} {...props}>
+    {children}
+  </label>
+);
 
-export const Input = styled.input`
-  padding: 0.75rem 1rem;
-  font-size: 1rem;
-  color: ${props => props.theme.colors.text};
-  background-color: ${props => props.theme.colors.surface};
-  border: 1px solid ${props => props.theme.colors.border};
-  border-radius: ${props => props.theme.radii.md};
-  outline: none;
-  transition: ${props => props.theme.transitions.fast};
-
-  &:focus {
-    border-color: ${props => props.theme.colors.primary};
-    box-shadow: 0 0 0 3px ${props => `${props.theme.colors.primary}20`}; // 20 hex alpha for transparency
-  }
-
-  &::placeholder {
-    color: ${props => props.theme.colors.textSecondary};
-  }
-`;
+export const Input = ({ className, ...props }) => (
+  <input
+    className={`
+      w-full px-4 py-3
+      text-base text-slate-800
+      bg-white
+      border border-slate-200 rounded-md
+      outline-none
+      transition-all duration-200
+      focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20
+      placeholder:text-slate-400
+      ${className || ''}
+    `}
+    {...props}
+  />
+);

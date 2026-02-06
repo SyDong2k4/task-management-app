@@ -9,6 +9,7 @@ export const boardReducer = (state, action) => {
 
         case 'ADD_COLUMN':
             if (!state.columns) state.columns = [];
+            if (state.columns.some(c => c._id === action.payload._id)) return state;
             return {
                 ...state,
                 columns: [...state.columns, action.payload]

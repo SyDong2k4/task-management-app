@@ -36,8 +36,12 @@ const CreateBoardModal = ({ isOpen, onClose, onBoardCreated }) => {
                         required
                     />
                 </InputGroup>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
-                    <Button type="button" onClick={onClose} style={{ background: 'transparent', color: '#64748b', boxShadow: 'none' }}>
+                <div className="flex justify-end gap-4 mt-6">
+                    <Button
+                        type="button"
+                        onClick={onClose}
+                        className="bg-transparent text-slate-500 shadow-none hover:bg-slate-100 hover:text-slate-700 hover:shadow-none translate-y-0"
+                    >
                         Cancel
                     </Button>
                     <Button type="submit" disabled={!title || loading}>

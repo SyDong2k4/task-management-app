@@ -1,60 +1,98 @@
-import React from 'react';
-import styled from 'styled-components';
 
-const HeaderContainer = styled.div`
-  padding: 1rem;
-  font-weight: 600;
-  color: ${props => props.theme.colors.text};
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: grab;
-  
-  &:active {
-    cursor: grabbing;
-  }
-`;
 
-const Title = styled.div`
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-`;
+import { useState, useRef, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import boardService from '../../services/boardService';
 
-const Actions = styled.div`
-  opacity: 0;
-  transition: opacity 0.2s;
-  
-  ${HeaderContainer}:hover & {
-    opacity: 1;
-  }
-`;
+const ColumnHeader = ({ title, tasksCount, columnId }) => {
+  const { boardId } = useParams();
+  const [isEditing, setIsEditing] = useState(false);
+  const [newTitle, setNewTitle] = useState(title);
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef(null);
 
-const ActionButton = styled.button`
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 0.25rem;
-  border-radius: ${props => props.theme.radii.sm};
-  color: ${props => props.theme.colors.textSecondary};
-  
-  &:hover {
-    background-color: rgba(0,0,0,0.1);
-    color: ${props => props.theme.colors.text};
-  }
-`;
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-const ColumnHeader = ({ title, tasksCount }) => {
-    return (
-        <HeaderContainer>
-            <Title>{title}</Title>
-            <div style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: '8px' }}>{tasksCount}</div>
-            <Actions>
-                <ActionButton>•••</ActionButton>
-            </Actions>
-        </HeaderContainer>
-    );
+  const handleRename = async (e) => {
+    if (e.type === 'keydown' && e.key !== 'Enter') return;
+
+    if (newTitle.trim() !== title) {
+      try {
+        await boardService.updateColumn(boardId, columnId, { title: newTitle });
+      } catch (error) {
+        console.error("Failed to rename column", error);
+        setNewTitle(title);
+      }
+    }
+    setIsEditing(false);
+  };
+
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure you want to delete this list?')) {
+      try {
+        await boardService.deleteColumn(boardId, columnId);
+      } catch (error) {
+        console.error("Failed to delete column", error);
+      }
+    }
+  };
+
+  return (
+    <div className="p-4 font-semibold text-slate-800 flex justify-between items-center cursor-grab active:cursor-grabbing relative group">
+      {isEditing ? (
+        <input
+          autoFocus
+          value={newTitle}
+          onChange={(e) => setNewTitle(e.target.value)}
+          onBlur={handleRename}
+          onKeyDown={handleRename}
+          className="flex-1 p-1 border border-slate-300 rounded text-base font-semibold w-full"
+        />
+      ) : (
+        <div
+          className="flex-1 whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer"
+          onClick={() => setIsEditing(true)}
+        >
+          {title}
+        </div>
+      )}
+
+      <div className="text-xs text-slate-500 mx-2">{tasksCount}</div>
+
+      <div className="opacity-100 relative" ref={menuRef}>
+        <button
+          className="bg-transparent border-none cursor-pointer p-1 rounded text-slate-500 hover:bg-black/10 hover:text-slate-800"
+          onClick={() => setShowMenu(!showMenu)}
+        >
+          •••
+        </button>
+        {showMenu && (
+          <div className="absolute top-full right-0 bg-white rounded shadow-lg z-10 min-w-[120px] overflow-hidden border border-slate-200">
+            <div
+              className="px-4 py-2 cursor-pointer text-sm hover:bg-slate-100 text-slate-700"
+              onClick={() => { setIsEditing(true); setShowMenu(false); }}
+            >
+              Rename
+            </div>
+            <div
+              className="px-4 py-2 cursor-pointer text-sm hover:bg-red-50 text-red-500"
+              onClick={handleDelete}
+            >
+              Delete
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default ColumnHeader;

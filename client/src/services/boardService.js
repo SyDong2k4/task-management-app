@@ -31,10 +31,30 @@ const boardService = {
         return response.data;
     },
 
+    updateColumn: async (boardId, columnId, columnData) => {
+        const response = await api.put(`/boards/${boardId}/columns/${columnId}`, columnData);
+        return response.data;
+    },
+
+    deleteColumn: async (boardId, columnId) => {
+        const response = await api.delete(`/boards/${boardId}/columns/${columnId}`);
+        return response.data;
+    },
+
     createCard: async (boardId, cardData) => {
         // cardData should include { title, columnId }
         // Fix: Server expects POST /api/cards
         const response = await api.post(`/cards`, { ...cardData, boardId });
+        return response.data;
+    },
+
+    updateCard: async (cardId, cardData) => {
+        const response = await api.put(`/cards/${cardId}`, cardData);
+        return response.data;
+    },
+
+    deleteCard: async (cardId) => {
+        const response = await api.delete(`/cards/${cardId}`);
         return response.data;
     },
 

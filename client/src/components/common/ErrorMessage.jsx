@@ -1,8 +1,7 @@
-import styled from 'styled-components';
+import React from 'react';
 
-export const ErrorMessage = styled.span`
-  color: ${props => props.theme.colors.error};
-  font-size: 0.875rem;
-  margin-top: 0.25rem;
-  display: block;
-`;
+export const ErrorMessage = ({ children, className, ...props }) => (
+  <span className={`text-red-500 text-sm mt-1 block ${className || ''}`} {...props}>
+    {children}
+  </span>
+);

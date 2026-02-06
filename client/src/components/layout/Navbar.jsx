@@ -1,77 +1,63 @@
-import React from 'react';
-import styled from 'styled-components';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../common/Button';
-import { FaSignOutAlt, FaUserCircle, FaColumns } from 'react-icons/fa';
-
-const Nav = styled.nav`
-  background: white;
-  border-bottom: 1px solid ${props => props.theme.colors.border};
-  padding: 0 2rem;
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: ${props => props.theme.shadows.sm};
-  position: sticky;
-  top: 0;
-  z-index: 100;
-`;
-
-const Logo = styled(Link)`
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: ${props => props.theme.colors.primary};
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  
-  &:hover {
-    color: ${props => props.theme.colors.primaryHover};
-    text-decoration: none;
-  }
-`;
-
-const UserMenu = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-`;
-
-const UserInfo = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: ${props => props.theme.colors.text};
-  font-weight: 500;
-`;
+import { FaSignOutAlt, FaUserCircle, FaColumns, FaMoon, FaSun } from 'react-icons/fa';
 
 const Navbar = () => {
-    const { user, logout } = useAuth();
-    const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
-    };
+  const [theme, setTheme] = useState(() => {
+    if (typeof window === 'undefined') return 'light';
+    return localStorage.getItem('theme') || 'light';
+  });
 
-    return (
-        <Nav>
-            <Logo to="/dashboard">
-                <FaColumns /> KanbanFlow
-            </Logo>
-            <UserMenu>
-                <UserInfo>
-                    <FaUserCircle size={20} />
-                    {user?.username}
-                </UserInfo>
-                <Button onClick={handleLogout} style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}>
-                    <FaSignOutAlt style={{ marginRight: '0.5rem' }} /> Logout
-                </Button>
-            </UserMenu>
-        </Nav>
-    );
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  return (
+    <nav className="bg-white/90 dark:bg-slate-900/90 h-16 border-b border-slate-200 dark:border-slate-800 px-4 md:px-8 flex items-center justify-between shadow-sm sticky top-0 z-50 backdrop-blur">
+      <Link
+        to="/dashboard"
+        className="text-2xl font-bold text-primary flex items-center gap-2 hover:text-primary/80 no-underline"
+      >
+        <FaColumns /> KanbanFlow
+      </Link>
+      <div className="flex items-center gap-4 md:gap-6">
+        <button
+          onClick={toggleTheme}
+          className="hidden sm:inline-flex items-center justify-center w-9 h-9 rounded-full border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-200 bg-white/60 dark:bg-slate-900/60 hover:bg-slate-100 hover:dark:bg-slate-800 transition-colors"
+          aria-label="Toggle theme"
+        >
+          {theme === 'dark' ? <FaSun size={14} /> : <FaMoon size={14} />}
+        </button>
+        <div className="hidden sm:flex items-center gap-2 text-slate-800 dark:text-slate-100 font-medium">
+          <FaUserCircle size={20} />
+          {user?.username}
+        </div>
+        <Button onClick={handleLogout} className="py-2 px-4 text-sm">
+          <FaSignOutAlt className="mr-2" /> Logout
+        </Button>
+      </div>
+    </nav>
+  );
 };
 
 export default Navbar;

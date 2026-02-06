@@ -1,145 +1,169 @@
-````carousel
 # Ứng Dụng Quản Lý Công Việc (Task Management App)
-## Báo Cáo Tiến Độ: Tuần 1, 2 & 3
-### Triển khai & Kiểm thử Backend
-**Ngày báo cáo**: 30/01/2026
-**Trạng thái**: Hoàn thành (Completed)
-**Người thực hiện**: Nguyễn Sỹ Đồng
+## Báo Cáo Tiến Độ Chi Tiết: Giai Đoạn (Tuần 1-3)
+
+**Thời gian thực hiện**: 15/01/2026 - 06/02/2026
+**Người thực hiện**:
+1. Nguyễn Sỹ Đồng MSSV: 22010021
+
 
 ---
 
-### Tóm tắt (Executive Summary)
-Trong 3 tuần làm việc, đội ngũ đã hoàn thành nền tảng **Backend** và cơ bản về **Frontend**. Hệ thống Backend (Node.js/Express) hoạt động ổn định với đầy đủ API và Socket.io. Phía Frontend (React) đã hoàn thiện Authentication, Dashboard, và tích hợp Real-time Socket. Người dùng hiện có thể đăng nhập, tạo bảng, và thấy trạng thái kết nối trực tuyến trên giao diện Board. tuần tiếp theo sẽ tập trung vào tính năng cốt lõi: Kéo thả (Drag & Drop) thẻ công việc.
-<!-- slide -->
-# 1. Tổng Quan Kiến Trúc (Architecture Overview)
+### 📋 Mục Lục
+1.  [Tổng Quan Dự Án & Công Nghệ](#1-tổng-quan-dự-án--công-nghệ)
+2.  [Chi Tiết Triển Khai Tuần 1: Khởi Tạo & Database](#2-tuần-1-khởi-tạo-hệ-thống--cơ-sở-dữ-liệu)
+3.  [Chi Tiết Triển Khai Tuần 2: Backend API & Authentication](#3-tuần-2-backend-services--api-implementation)
+4.  [Chi Tiết Triển Khai Tuần 3: Frontend & Real-time Integration](#4-tuần-3-frontend-interface--real-time-core)
+5.  [Vấn Đề Kỹ Thuật & Giải Pháp (Technical Challenges)](#5-thách-thức-kỹ-thuật--giải-pháp)
+6.  [Kết Quả Đạt Được & Hướng Phát Triển](#6-kết-quả--lộ-trình-tiếp-theo)
 
-Hệ thống tuân theo mô hình **Client-Server** với giao tiếp thời gian thực hai chiều.
+---
 
-### Tech Stack
--   **Runtime Environment**: Node.js
--   **Framework**: Express.js (RESTful API)
--   **Database**: MongoDB (Lưu trữ NoSQL linh hoạt)
--   **ODM**: Mongoose v8.0 (Mô hình hóa dữ liệu)
--   **Real-time Engine**: Socket.io v4.7 (Giao tiếp WebSocket)
--   **Security**: JWT (JSON Web Tokens) & Bcrypt (Mã hóa mật khẩu)
+# 1. Tổng Quan Dự Án & Công Nghệ
 
-### Luồng Dữ Liệu (Data Flow)
-1.  **REST API**: Xử lý các yêu cầu CRUD (Create, Read, Update, Delete) cho Users, Boards, Columns, Cards.
-2.  **WebSocket**: Đồng bộ hóa trạng thái giao diện người dùng ngay lập tức (ví dụ: khi kéo thả thẻ).
-3.  **Middleware**: `auth`, `errorHandling` đảm bảo tính bảo mật và ổn định.
-<!-- slide -->
-# 2. Tuần 1: Thiết Lập & Cơ Sở Dữ Liệu
+Dự án phát triển một ứng dụng quản lý công việc theo mô hình **Kanban Board** (tương tự Trello), cho phép người dùng tạo bảng, danh sách, thẻ công việc và tương tác thời gian thực với các thành viên khác.
 
-**Mục tiêu**: Xây dựng khung dự án và thiết kế Schema chuẩn xác.
+### Kiến Trúc Hệ Thống (Architecture)
+Hệ thống sử dụng kiến trúc **Client-Server** tách biệt (Decoupled Architecture), giao tiếp qua RESTful API cho các tác vụ chuẩn và WebSocket cho các tác vụ thời gian thực.
 
-### 2.1 Cấu Trúc Dự Án (Project Structure)
-Tổ chức thư mục theo hướng module hóa để dễ bảo trì:
--   `src/config/`: Cấu hình Database, Environment variables.
--   `src/controllers/`: Logic xử lý nghiệp vụ.
--   `src/models/`: Định nghĩa Mongoose Schemas.
--   `src/routes/`: Định tuyến API endpoints.
--   `src/sockets/`: Xử lý sự kiện Real-time.
--   `src/middleware/`: Xác thực và xử lý lỗi tập trung.
-
-### 2.2 Thiết Kế Cơ Sở Dữ Liệu (Database Design)
-Các quan hệ (Relationships) được thiết lập chặt chẽ thông qua `ObjectId`.
-
-#### **A. User Model** (`User.js`)
--   `username`: Tên đăng nhập (Unique, Required).
--   `email`: Email xác thực (Unique, Validated regex).
--   `password`: Lưu dưới dạng Hash (Bcrypt).
--   `avatar`: Đường dẫn ảnh đại diện.
-
-#### **B. Board Model** (`Board.js`)
--   `title`: Tên bảng công việc.
--   `owner`: Liên kết tới **User** (Người tạo).
--   `members`: Danh sách **User** được cấp quyền truy cập.
--   `background`: Màu sắc hoặc hình nền bảng.
-
-#### **C. Card & Column Models**
--   **Column Schema**: `title`, `boardId`, `order` (Vị trí sắp xếp).
--   **Card Schema**:
-    -   `title`, `description`: Nội dung chính.
-    -   `columnId`: Cột chứa thẻ.
-    -   `boardId`: Denormalization để truy vấn nhanh.
-    -   `assignees`: Danh sách người được giao việc.
-    -   `dueDate`: Hạn chót.
-    -   `order`: Thứ tự thẻ trong cột.
-<!-- slide -->
-# 3. Tuần 2: Phát Triển API & Bảo Mật
-
-**Mục tiêu**: Hoàn thiện các chức năng nghiệp vụ cốt lõi.
-
-### 3.1 Xác Thực & Phân Quyền (Authentication)
-Sử dụng chiến lược **JWT (JSON Web Token)** để bảo vệ tài nguyên.
--   **Đăng ký/Đăng nhập**: Mã hóa mật khẩu, cấp phát Token có thời hạn.
--   **Middleware `protect`**: Kiểm tra header `Authorization: Bearer <token>` trước khi cho phép truy cập private routes.
-
-### 3.2 Bảng Tổng Hợp API (API Endpoints Summary)
-
-| Phân hệ | Method | Endpoint | Mô tả chi tiết |
+| Phân Lớp | Công Nghệ | Phiên Bản | Vai Trò |
 | :--- | :--- | :--- | :--- |
-| **Auth** | POST | `/api/auth/register` | Đăng ký tài khoản mới & trả về Token |
-| | POST | `/api/auth/login` | Đăng nhập & trả về Token |
-| | GET | `/api/auth/me` | Lấy thông tin user hiện tại |
-| **Boards** | GET | `/api/boards` | Lấy danh sách bảng của User |
-| | POST | `/api/boards` | Tạo bảng mới |
-| | GET | `/api/boards/:id` | Xem chi tiết bảng (kèm Columns/Cards) |
-| | PUT | `/api/boards/:id` | Cập nhật thông tin bảng |
-| | POST | `/api/boards/:id/members` | Thêm thành viên vào bảng |
-| **Cards** | POST | `/api/cards` | Tạo thẻ công việc mới |
-| | PUT | `/api/cards/:id/move` | **[Quan trọng]** Di chuyển thẻ giữa các cột |
+| **Frontend** | React.js | v18.2 | Xây dựng giao diện người dùng (Single Page Application) |
+| | Vite | v5.0 | Build tool siêu tốc (thay thế Webpack) |
+| | Tailwind CSS | v3.4 | Utility-first CSS framework để styling nhanh chóng |
+| | @dnd-kit | v6.1 | Thư viện chuyên dụng cho Drag & Drop (nhẹ, hỗ trợ touch) |
+| **Backend** | Node.js | v18+ | Runtime environment |
+| | Express.js | v4.18 | Web framework xử lý routing và middleware |
+| | Socket.io | v4.7 | Real-time engine (WebSocket wrapper) |
+| **Database** | MongoDB | v6.0 | NoSQL Database lưu trữ dữ liệu dạng Document (JSON-like) |
+| | Mongoose | v8.0 | ODM (Object Data Modeling) quản lý Schema |
 
-<!-- slide -->
-# 4. Tính Năng Thời Gian Thực (Real-time)
+---
 
-Hệ thống Socket.io hoạt động song song với REST API để đảm bảo trải nghiệm mượt mà.
+# 2. Tuần 1: Khởi Tạo Hệ Thống & Cơ Sở Dữ Liệu
+**Giai đoạn nền tảng**: Quyết định cấu trúc dự án và thiết kế schema dữ liệu.
 
-### Cơ Chế Hoạt Động
--   **Namespaces/Rooms**: Mỗi `boardId` được coi là một "Room". Khi user mở bảng, Client emit `join-board`.
--   **Authentication**: Socket handshake cũng yêu cầu JWT để xác thực danh tính người kết nối.
+### 2.1 Cấu Trúc Dự Án (Monorepo-like)
+Tổ chức code theo mô hình **MVC (Model-View-Controller)** phía Backend để dễ dàng mở rộng bảo trì.
 
-### Các Sự Kiện Chính
-1.  **`join-board`**: User tham gia vào room của bảng cụ thể.
-2.  **`card:moved`**: Khi User A kéo thả thẻ, Server nhận event và broadcast vị trí mới cho tất cả Users khác trong room.
-3.  **`card:created` / `card:updated`**: Đồng bộ dữ liệu thẻ tức thì không cần reload trang.
-4.  **`column:added`**: Cột mới xuất hiện ngay lập tức trên màn hình thành viên khác.
+```
+project-root/
+├── client/                 # React Frontend
+│   ├── src/
+│   │   ├── components/     # UI Components (Reusable)
+│   │   ├── services/       # API Services & Socket Logic
+│   │   ├── context/        # React Context (Auth, Socket)
+│   │   └── pages/          # Page Views (Login, Dashboard, Board)
+└── server/                 # Node.js Backend
+    ├── src/
+    │   ├── config/         # DB Connection, Env Variables
+    │   ├── controllers/    # Business Logic (Xử lý request)
+    │   ├── models/         # Mongoose Schemas (Định nghĩa DB)
+    │   ├── routes/         # Express Routes (API Endpoints)
+    │   └── sockets/        # Socket.io Event Handlers
+```
 
-<!-- slide -->
-# 5. Kết Quả Kiểm Thử (Verification)
+### 2.2 Thiết Kế Database (Mongoose Schemas)
+Sử dụng MongoDB với Mongoose để tận dụng tính linh hoạt của NoSQL nhưng vẫn đảm bảo tính chặt chẽ của dữ liệu.
 
-Đã thực hiện kiểm thử thủ công (Manual Testing) toàn diện:
+*   **User Schema**:
+    *   Lưu trữ thông tin người dùng. `password` không lưu plain-text mà được hash bằng `bcryptjs` trước khi lưu (`pre-save hook`).
+*   **Board Schema**:
+    *   `columns`: Array các `ObjectId` tham chiếu đến Collection `Columns` -> Giúp xác định thứ tự của các cột trong bảng.
+*   **Column & Card Schema**:
+    *   Thiết kế tham chiếu ngược (Bi-directional Reference): `Column` chứa mảng `cardIds` để sắp xếp thứ tự thẻ, trong khi `Card` chứa `columnId` để biết mình thuộc cột nào.
 
-### ✅ Kết nối Database
--   MongoDB kết nối thành công qua Mongoose.
--   Schema Validation hoạt động đúng (báo lỗi khi thiếu required fields).
+---
 
-### ✅ API Testing (Postman)
--   Đăng ký/Đăng nhập: Token được sinh ra chính xác.
--   CRUD Board: Tạo bảng, thêm thành viên thành công.
--   Bảo mật: Truy cập route `/api/boards` không có Token bị từ chối (401 Unauthorized).
+# 3. Tuần 2: Backend Services & API Implementation
+**Giai đoạn logic nghiệp vụ**: Xây dựng API và cơ chế bảo mật.
 
-### ✅ Socket Testing
--   Client giả lập kết nối thành công với Token.
--   User gia nhập đúng room.
--   Sự kiện `card:moved` được emit và nhận phản hồi đúng định dạng.
+### 3.1 Authentication & Security (Xác thực)
+*   **Cơ chế**: JWT (JSON Web Token).
+*   **Luồng hoạt động**:
+    1.  User đăng nhập -> Server xác thực -> Trả về `accessToken`.
+    2.  Client lưu Token (localStorage/cookie).
+    3.  Các request tiếp theo gửi kèm Token trong Header: `Authorization: Bearer <token>`.
+*   **Middleware (`authMiddleware`)**: Chặn các request không có Token hợp lệ, bảo vệ các API private.
 
-<!-- slide -->
-# 6. Kế Hoạch Tuần Tiếp Theo (Tuần 3)
+### 3.2 Key RESTful APIs
+Chúng tôi đã triển khai đầy đủ các thao tác CRUD. Một số API quan trọng:
 
-**Trọng tâm**: Phát triển Frontend (React.js) và Tích hợp.
+*   `POST /api/auth/register`: Đăng ký tài khoản.
+*   `GET /api/boards`: Lấy danh sách bảng của user hiện tại.
+*   `GET /api/boards/:id`: Lấy chi tiết bảng (**Sử dụng `populate` của Mongoose để lấy luôn danh sách Columns và Cards lồng nhau** - Giảm số lượng request từ Client).
+*   `PUT /api/cards/reorder`: API cập nhật vị trí thẻ sau khi kéo thả.
+    *   *Payload*: `{ cardId, newColumnId, newIndex, oldColumnId }`.
+    *   *Logic*: Cập nhật mảng `cardIds` trong `Column` cũ và mới.
 
-1.  **✅ Khởi tạo UI**:
-    -   ✅ Thiết lập dự án React với CSS Modules/Styled Components.
-    -   ✅ Cấu hình React Router cho điều hướng.
-2.  **✅ Authentication Pages**:
-    -   ✅ Giao diện Login / Register đẹp mắt.
-    -   ✅ Xử lý lưu trữ Token (LocalStorage/Cookie).
-3.  **🔄 Dashboard & Kanban View**:
-    -   ✅ Hiển thị danh sách bảng.
-    -   ✅ Trang chi tiết bảng (`/board/:id`).
-    -   ⬜ Xây dựng giao diện Drag & Drop.
-4.  **✅ Tích hợp**:
-    -   ✅ Kết nối Axios với Backend API.
-    -   ✅ Lắng nghe sự kiện Socket.io để cập nhật UI.
-````
+### 3.3 Socket.io Integration (Real-time Core)
+Thiết lập Server Socket để lắng nghe và phát sự kiện.
+*   **Room Architecture**: Mỗi Board là một "Room".
+    ```javascript
+    // Khi user vào bảng
+    socket.on('join-board', (boardId) => {
+        socket.join(boardId); // User tham gia vào room tương ứng
+    });
+    ```
+*   **Broadcasting**: Khi có thay đổi (ví dụ: kéo thẻ), Server gửi sự kiện cho **tất cả mọi người trong Room ngoại trừ người gửi** (`socket.to(boardId).emit(...)`).
+
+---
+
+# 4. Tuần 3: Frontend Interface & Real-time Core
+**Giai đoạn thách thức nhất**: Xử lý giao diện động và đồng bộ thời gian thực.
+
+### 4.1 Drag & Drop với @dnd-kit
+Thay vì sử dụng HTML5 Drag & Drop API (vốn hạn chế và khó tùy biến), chúng tôi chọn **@dnd-kit** vì:
+*   Hỗ trợ cảm ứng (Mobile/Tablet friendly).
+*   Kiến trúc hooks hiện đại (`useDraggable`, `useDroppable`).
+*   Khả năng tùy biến giao diện khi đang kéo (DragOverlay).
+
+**Chi tiết triển khai**:
+*   Sử dụng `SortableContext` cho các cột (ngang) và các thẻ (dọc).
+*   Thuat toán va chạm: `closestCorners` để xác định vị trí thả chính xác nhất.
+*   **Optimistic Updates**: Khi người dùng thả thẻ:
+    1.  **Ngay lập tức** cập nhật State của React để UI hiển thị vị trí mới -> Cảm giác "instant".
+    2.  Gọi API cập nhật ngầm.
+    3.  Emit sự kiện Socket để báo cho người khác.
+    4.  Nếu API lỗi -> Rollback về trạng thái cũ (Cơ chế an toàn).
+
+### 4.2 Real-time Client Integration
+Tạo Custom Hook `useBoardSocket` để đóng gói logic Socket:
+*   Tự động Connect khi Component Mount.
+*   Tự động Disconnect/Leave Room khi Component Unmount (Tránh memory leak).
+*   Lắng nghe sự kiện:
+    *   `card:moved`: Nhận tọa độ mới -> Cập nhật Redux/State -> Thẻ tự động bay về vị trí mới trên màn hình người khác.
+
+### 4.3 Styling với Tailwind CSS
+Sử dụng Tailwind để style nhanh chóng theo hệ thống Design System:
+*   **Responsive**: Giao diện tự thích ứng với Mobile/Desktop.
+*   **Custom Config**: Đã cấu hình lại `tailwind.config.js` để quét đúng các file `.jsx` trong thư mục `src/`, khắc phục lỗi mất CSS ban đầu.
+*   **Dark Mode**: (Đang phát triển nền tảng để hỗ trợ).
+
+---
+
+# 5. Thách Thức Kỹ Thuật & Giải Pháp
+
+1.  **Vấn đề**: Socket connection không ổn định khi mạng yếu.
+    *   *Giải pháp*: Cấu hình `reconnection: true` và hiển thị status visual (Đèn xanh/đỏ) trên UI để người dùng biết trạng thái.
+2.  **Vấn đề**: "Flickering" (Nhấp nháy) khi kéo thẻ.
+    *   *Giải pháp*: Sử dụng `DragOverlay` của @dnd-kit để vẽ một bản sao của thẻ đang kéo (Ghost element), trong khi thẻ gốc được ẩn đi (`opacity: 0.5`).
+3.  **Vấn đề**: API lấy dữ liệu bảng quá chậm do phải query nhiều bảng (Board -> Column -> Card).
+    *   *Giải pháp*: Tối ưu Mongoose Query với `populate` lồng nhau chính xác và đánh Index cho `boardId` trong Cards Collection.
+
+---
+
+# 6. Kết Quả & Lộ Trình Tiếp Theo
+
+### Kết quả Tuần 1-3:
+*    Hệ thống Backend vững chắc, API Clean.
+*    Frontend mượt mà, không reload trang.
+*    Tính năng Real-time hoạt động ổn định (độ trễ < 100ms trong mạng LAN).
+
+### Kế hoạch Tuần 4 (Dự kiến):
+*   Tính năng **Thành viên & Phân quyền**:
+    *   Mời thành viên qua email.
+    *   Chia quyền (Admin/Editor/Viewer).
+*   **UX Improvements**:
+    *   Thêm Loading Skeletons.
+    *   Toast Notifications (Thông báo góc màn hình khi có lỗi/thành công).
+*   **Deployment**: Đưa ứng dụng lên môi trường Production.

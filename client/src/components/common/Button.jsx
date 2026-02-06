@@ -1,34 +1,26 @@
-import styled from 'styled-components';
+import React from 'react';
 
-export const Button = styled.button`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: ${props => props.fullWidth ? '100%' : 'auto'};
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #fff;
-  background: ${props => props.theme.colors.primary};
-  border: none;
-  border-radius: ${props => props.theme.radii.md};
-  cursor: pointer;
-  transition: ${props => props.theme.transitions.fast};
-  box-shadow: ${props => props.theme.shadows.sm};
-
-  &:hover {
-    background: ${props => props.theme.colors.primaryHover};
-    box-shadow: ${props => props.theme.shadows.md};
-    transform: translateY(-1px);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-
-  &:disabled {
-    background-color: ${props => props.theme.colors.textSecondary};
-    cursor: not-allowed;
-    transform: none;
-  }
-`;
+export const Button = ({ children, fullWidth, className, ...props }) => {
+  return (
+    <button
+      className={`
+        flex justify-center items-center
+        ${fullWidth ? 'w-full' : 'w-auto'}
+        px-6 py-3
+        text-base font-semibold text-white
+        bg-indigo-500
+        border-none rounded-md
+        cursor-pointer
+        transition-all duration-200
+        shadow-sm
+        hover:bg-indigo-600 hover:shadow-md hover:-translate-y-[1px]
+        active:translate-y-0
+        disabled:bg-slate-400 disabled:cursor-not-allowed disabled:transform-none
+        ${className || ''}
+      `}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};

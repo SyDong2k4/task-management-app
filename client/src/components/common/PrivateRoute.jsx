@@ -7,7 +7,7 @@ const PrivateRoute = () => {
 
     // While loading authentication state, you might want to show a spinner
     if (loading) {
-        return <div>Loading...</div>;
+        return <div className="flex justify-center items-center min-h-screen text-slate-500">Loading...</div>;
     }
 
     return user ? <Outlet /> : <Navigate to="/login" />;

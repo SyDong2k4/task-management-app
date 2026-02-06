@@ -1,58 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import styled from 'styled-components';
+
 import { useSortable, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import Card from './Card';
 import ColumnHeader from './ColumnHeader';
 import boardService from '../../services/boardService';
 
-const ColumnContainer = styled.div`
-  min-width: 280px;
-  width: 280px;
-  background-color: #f1f5f9;
-  border-radius: ${props => props.theme.radii.md};
-  display: flex;
-  flex-direction: column;
-  max-height: 100%;
-  
-  /* Sortable styles */
-  transform: ${props => props.transform};
-  transition: ${props => props.transition};
-  opacity: ${props => props.isDragging ? 0.5 : 1};
-`;
 
-const CardList = styled.div`
-  padding: 0 0.5rem 0.5rem;
-  flex: 1;
-  overflow-y: auto;
-  min-height: 50px;
-  
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-  &::-webkit-scrollbar-thumb {
-    background-color: #cbd5e1;
-    border-radius: 4px;
-  }
-`;
-
-const AddCardButton = styled.button`
-  background: transparent;
-  border: none;
-  color: ${props => props.theme.colors.textSecondary};
-  padding: 0.75rem;
-  text-align: left;
-  cursor: pointer;
-  border-radius: 0 0 ${props => props.theme.radii.md} ${props => props.theme.radii.md};
-  font-size: 0.875rem;
-  transition: background-color 0.2s;
-  
-  &:hover {
-    background-color: #e2e8f0;
-    color: ${props => props.theme.colors.text};
-  }
-`;
 
 const Column = ({ column, onCardAdded }) => {
     const { boardId } = useParams();
@@ -98,32 +53,28 @@ const Column = ({ column, onCardAdded }) => {
     };
 
     return (
-        <ColumnContainer
+        <div
             ref={setNodeRef}
             style={style}
-            {...attributes} // Attributes for drag handle, if we want whole column draggable
-            // For now, let's make whole column draggable only from header maybe?
-            // Currently applying to container.
-            transform={style.transform}
-            transition={style.transition}
-            isDragging={isDragging}
+            {...attributes}
+            className={`min-w-[280px] w-[280px] bg-slate-100/80 dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm flex flex-col max-h-full transition-transform ${isDragging ? 'opacity-50 scale-[0.98]' : 'hover:-translate-y-[1px]'}`}
         >
             {/* Pass listeners to Header if we want drag handle there only. 
                  But simplifying: make header handle drag. */}
             <div {...listeners}>
-                <ColumnHeader title={column.title} tasksCount={column.cards?.length || 0} />
+                <ColumnHeader title={column.title} tasksCount={column.cards?.length || 0} columnId={column._id} />
             </div>
 
             <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
-                <CardList>
+                <div className="p-2 flex-1 overflow-y-auto min-h-[50px] space-y-2">
                     {column.cards && column.cards.map(card => (
                         <Card key={card._id} card={card} />
                     ))}
-                </CardList>
+                </div>
             </SortableContext>
 
             {showAddCard ? (
-                <div style={{ padding: '0.5rem' }}>
+                <div className="p-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/70 rounded-b-2xl">
                     <form onSubmit={handleAddCard}>
                         <input
                             autoFocus
@@ -131,38 +82,20 @@ const Column = ({ column, onCardAdded }) => {
                             placeholder="Enter a title for this card..."
                             value={newCardTitle}
                             onChange={(e) => setNewCardTitle(e.target.value)}
-                            style={{
-                                width: '100%',
-                                padding: '0.5rem',
-                                borderRadius: '0.375rem',
-                                border: '1px solid #e2e8f0',
-                                marginBottom: '0.5rem'
-                            }}
+                            className="w-full p-2 rounded-md border border-slate-300 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/70"
                         />
-                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <div className="flex gap-2 items-center">
                             <button
                                 type="submit"
                                 disabled={loading}
-                                style={{
-                                    backgroundColor: '#6366f1',
-                                    color: 'white',
-                                    border: 'none',
-                                    padding: '0.5rem 0.75rem',
-                                    borderRadius: '0.25rem',
-                                    cursor: 'pointer'
-                                }}
+                                className="bg-indigo-500 text-white border-none px-3 py-2 rounded-md cursor-pointer text-sm hover:bg-indigo-600"
                             >
                                 {loading ? 'Adding...' : 'Add Card'}
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setShowAddCard(false)}
-                                style={{
-                                    background: 'transparent',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    color: '#64748b'
-                                }}
+                                            className="bg-transparent border-none cursor-pointer text-slate-500 hover:text-slate-800 text-sm"
                             >
                                 X
                             </button>
@@ -170,9 +103,14 @@ const Column = ({ column, onCardAdded }) => {
                     </form>
                 </div>
             ) : (
-                <AddCardButton onClick={() => setShowAddCard(true)}>+ Add a card</AddCardButton>
+                <button
+                    className="bg-transparent border-none text-slate-500 p-3 text-left cursor-pointer rounded-b-2xl text-sm hover:bg-slate-200/80 hover:text-slate-800 transition-colors w-full"
+                    onClick={() => setShowAddCard(true)}
+                >
+                    + Add a card
+                </button>
             )}
-        </ColumnContainer>
+        </div>
     );
 };
 

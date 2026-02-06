@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useReducer, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import styled from 'styled-components';
+
 import {
     DndContext,
     closestCorners,
@@ -25,44 +25,6 @@ import Card from '../components/board/Card'; // Import for Overlay
 import BoardHeader from '../components/board/BoardHeader';
 import { useSocket } from '../context/SocketContext';
 import { boardReducer } from '../reducers/boardReducer';
-
-const Container = styled.div`
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background-color: ${props => props.bg || props.theme.colors.background};
-  background-top: no-repeat; 
-  background-size: cover;
-  overflow: hidden; /* Prevent scroll on container level */
-`;
-
-const Canvas = styled.div`
-  flex: 1;
-  overflow-x: auto;
-  padding: 1.5rem;
-  display: flex;
-  align-items: flex-start;
-  gap: 1.5rem;
-  height: 100%; /* important */
-`;
-
-const AddListButton = styled.button`
-  min-width: 280px;
-  padding: 1rem;
-  background-color: rgba(0, 0, 0, 0.08);
-  border: none;
-  border-radius: ${props => props.theme.radii.md};
-  color: ${props => props.theme.colors.textSecondary};
-  text-align: left;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: rgba(0, 0, 0, 0.16);
-    color: ${props => props.theme.colors.text};
-  }
-`;
 
 const dropAnimation = {
     sideEffects: defaultDropAnimationSideEffects({
@@ -169,7 +131,8 @@ const Board = () => {
 
         try {
             setColumnLoading(true);
-            await boardService.createColumn(boardId, { title: newColumnTitle });
+            const newColumn = await boardService.createColumn(boardId, { title: newColumnTitle });
+            dispatch({ type: 'ADD_COLUMN', payload: newColumn });
             setNewColumnTitle('');
             setShowAddColumn(false);
         } catch (error) {
@@ -355,9 +318,12 @@ const Board = () => {
             onDragOver={onDragOver}
             onDragEnd={onDragEnd}
         >
-            <Container bg={board.background}>
+            <div
+                className="min-h-[70vh] flex flex-col bg-cover overflow-hidden rounded-3xl border border-slate-200/80 dark:border-slate-700 shadow-md bg-slate-50/60 dark:bg-slate-900/60 transition-colors"
+                style={{ backgroundColor: board.background || undefined }}
+            >
                 <BoardHeader board={board} connected={connected} />
-                <Canvas>
+                <div className="flex-1 overflow-x-auto p-4 sm:p-6 flex items-start gap-4 sm:gap-6 h-full">
                     <SortableContext items={columnIds} strategy={horizontalListSortingStrategy}>
                         {board.columns && board.columns.map(column => (
                             <Column
@@ -370,14 +336,7 @@ const Board = () => {
 
                     <div style={{ minWidth: '280px' }}>
                         {showAddColumn ? (
-                            <div style={{
-                                backgroundColor: '#f1f5f9',
-                                padding: '0.75rem',
-                                borderRadius: '0.5rem',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '0.5rem'
-                            }}>
+                            <div className="bg-slate-100/80 p-3 rounded-2xl flex flex-col gap-2 border border-slate-200/80 shadow-sm">
                                 <form onSubmit={handleAddColumn}>
                                     <input
                                         autoFocus
@@ -385,38 +344,20 @@ const Board = () => {
                                         placeholder="Enter list title..."
                                         value={newColumnTitle}
                                         onChange={(e) => setNewColumnTitle(e.target.value)}
-                                        style={{
-                                            width: '100%',
-                                            padding: '0.5rem',
-                                            borderRadius: '0.25rem',
-                                            border: '1px solid #cbd5e1',
-                                            marginBottom: '0.5rem'
-                                        }}
+                                        className="w-full p-2 rounded-md border border-slate-300 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/70"
                                     />
-                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                    <div className="flex gap-2 items-center">
                                         <button
                                             type="submit"
                                             disabled={columnLoading}
-                                            style={{
-                                                backgroundColor: '#6366f1',
-                                                color: 'white',
-                                                border: 'none',
-                                                padding: '0.5rem 0.75rem',
-                                                borderRadius: '0.25rem',
-                                                cursor: 'pointer'
-                                            }}
+                                            className="bg-indigo-500 text-white border-none px-3 py-2 rounded-md cursor-pointer text-sm hover:bg-indigo-600"
                                         >
                                             {columnLoading ? 'Adding...' : 'Add List'}
                                         </button>
                                         <button
                                             type="button"
                                             onClick={() => setShowAddColumn(false)}
-                                            style={{
-                                                background: 'transparent',
-                                                border: 'none',
-                                                cursor: 'pointer',
-                                                color: '#64748b'
-                                            }}
+                                            className="bg-transparent border-none cursor-pointer text-slate-500 hover:text-slate-800 text-sm"
                                         >
                                             X
                                         </button>
@@ -424,10 +365,15 @@ const Board = () => {
                                 </form>
                             </div>
                         ) : (
-                            <AddListButton onClick={() => setShowAddColumn(true)}>+ Add another list</AddListButton>
+                            <button
+                                className="min-w-[280px] p-4 bg-black/10 hover:bg-black/20 text-slate-600 hover:text-slate-900 text-left rounded-2xl font-medium transition-colors border border-black/5"
+                                onClick={() => setShowAddColumn(true)}
+                            >
+                                + Add another list
+                            </button>
                         )}
                     </div>
-                </Canvas>
+                </div>
                 <DragOverlay dropAnimation={dropAnimation}>
                     {activeItem ? (
                         activeItem.type === 'column' ? (
@@ -439,7 +385,7 @@ const Board = () => {
                         )
                     ) : null}
                 </DragOverlay>
-            </Container>
+            </div>
         </DndContext>
     );
 };

@@ -1,59 +1,17 @@
 import React, { useState } from 'react';
-import styled, { keyframes } from 'styled-components';
+
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/common/Button';
 import { Input, InputGroup, Label } from '../components/common/Input';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 
-const fadeIn = keyframes`
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-`;
 
-const Container = styled.div`
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
-  padding: 1rem;
-`;
-
-const Card = styled.div`
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
-  padding: 2.5rem;
-  border-radius: ${props => props.theme.radii.xl};
-  box-shadow: ${props => props.theme.shadows.lg};
-  width: 100%;
-  max-width: 400px;
-  animation: ${fadeIn} 0.5s ease-out;
-`;
-
-const Title = styled.h1`
-  text-align: center;
-  margin-bottom: 2rem;
-  color: ${props => props.theme.colors.text};
-  font-weight: 700;
-`;
-
-const StyledLink = styled(Link)`
-  display: block;
-  text-align: center;
-  margin-top: 1rem;
-  font-size: 0.875rem;
-  color: ${props => props.theme.colors.textSecondary};
-  
-  &:hover {
-    color: ${props => props.theme.colors.primary};
-  }
-`;
 
 const Login = () => {
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [isLoading, setIsLoading] = useState(false);
-    const { login, error: authError } = useAuth(); // Assume auth context handles global errors too, or simplified
+    const { login, error: authError } = useAuth();
     const [localError, setLocalError] = useState('');
     const navigate = useNavigate();
 
@@ -67,7 +25,7 @@ const Login = () => {
         setLocalError('');
         try {
             await login(formData);
-            navigate('/dashboard'); // Redirect after login
+            navigate('/dashboard');
         } catch (err) {
             setLocalError(err.response?.data?.message || 'Failed to login');
         } finally {
@@ -76,9 +34,9 @@ const Login = () => {
     };
 
     return (
-        <Container>
-            <Card>
-                <Title>Welcome Back</Title>
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 to-pink-500 dark:from-slate-950 dark:to-slate-900 p-4 transition-colors">
+            <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm p-10 rounded-xl shadow-lg w-full max-w-md animate-fadeIn border border-slate-200 dark:border-slate-700">
+                <h1 className="text-center mb-8 text-slate-800 dark:text-slate-100 font-bold text-2xl">Welcome Back</h1>
                 <form onSubmit={handleSubmit}>
                     <InputGroup>
                         <Label>Email</Label>
@@ -105,14 +63,19 @@ const Login = () => {
 
                     {(localError || authError) && <ErrorMessage>{localError || authError}</ErrorMessage>}
 
-                    <Button type="submit" fullWidth disabled={isLoading} style={{ marginTop: '1rem' }}>
+                    <Button type="submit" fullWidth disabled={isLoading} className="mt-4">
                         {isLoading ? 'Logging in...' : 'Login'}
                     </Button>
 
-                    <StyledLink to="/register">Don't have an account? Sign up</StyledLink>
+                    <Link
+                        to="/register"
+                        className="block text-center mt-4 text-sm text-slate-500 hover:text-indigo-500 transition-colors"
+                    >
+                        Don't have an account? Sign up
+                    </Link>
                 </form>
-            </Card>
-        </Container>
+            </div>
+        </div>
     );
 };
 

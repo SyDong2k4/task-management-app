@@ -1,46 +1,20 @@
 import React from 'react';
-import styled from 'styled-components';
-
-const HeaderContainer = styled.div`
-  padding: 1rem 1.5rem;
-  background: white;
-  border-bottom: 1px solid ${props => props.theme.colors.border};
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-`;
-
-const Title = styled.h1`
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: ${props => props.theme.colors.text};
-`;
-
-const StatusBadge = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  color: ${props => props.theme.colors.textSecondary};
-`;
-
-const LiveDot = styled.div`
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: ${props => props.connected ? props.theme.colors.success : props.theme.colors.error};
-`;
 
 const BoardHeader = ({ board, connected = false }) => {
-    return (
-        <HeaderContainer>
-            <Title>{board?.title}</Title>
-            <StatusBadge>
-                <LiveDot connected={connected} />
-                {connected ? 'Live' : 'Disconnected'}
-            </StatusBadge>
-        </HeaderContainer>
-    );
+  return (
+    <div className="px-6 py-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 flex items-center justify-between rounded-t-2xl shadow-sm transition-colors">
+      <div>
+        <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">{board?.title}</h1>
+        {board?.description && (
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 line-clamp-1">{board.description}</p>
+        )}
+      </div>
+      <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+        <div className={`w-2 h-2 rounded-full ${connected ? 'bg-emerald-400' : 'bg-red-500'}`} />
+        {connected ? 'Live collaboration' : 'Disconnected'}
+      </div>
+    </div>
+  );
 };
 
 export default BoardHeader;
