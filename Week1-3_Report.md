@@ -142,6 +142,6 @@ Trong quá trình phát triển 3 tuần đầu, nhóm đã đối mặt và gi�
 *   Người dùng đã có thể thực hiện trọn vẹn quy trình tạo tài khoản và tạo bảng công việc.
 
 ### Công việc tiếp theo (Future Work for Week 4):
-*   **Nâng cao trải nghiệm tương tác**: Triển khai tính năng **Drag & Drop (Kéo thả)** cho Card và Column. Đây là "trái tim" của ứng dụng Kanban.
+*   **Nâng cao trải nghiệm tương tác**: Triển khai tính năng **Drag & Drop (Kéo thả)** cho Card và Column.
 *   **Tương tác thời gian thực**: Tích hợp **Socket.io** để khi User A kéo thẻ, màn hình User B cũng tự động cập nhật mà không cần F5.
 *   **Hoàn thiện UI**: Thêm các trạng thái Loading skeleton, thông báo Toast (Success/Error).
