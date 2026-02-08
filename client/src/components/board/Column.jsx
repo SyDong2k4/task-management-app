@@ -9,7 +9,7 @@ import boardService from '../../services/boardService';
 
 
 
-const Column = ({ column, onCardAdded }) => {
+const Column = ({ column, onCardAdded, onCardClick }) => {
     const { boardId } = useParams();
     const [showAddCard, setShowAddCard] = useState(false);
     const [newCardTitle, setNewCardTitle] = useState('');
@@ -68,7 +68,7 @@ const Column = ({ column, onCardAdded }) => {
             <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
                 <div className="p-2 flex-1 overflow-y-auto min-h-[50px] space-y-2">
                     {column.cards && column.cards.map(card => (
-                        <Card key={card._id} card={card} />
+                        <Card key={card._id} card={card} onClick={() => onCardClick(card)} />
                     ))}
                 </div>
             </SortableContext>
@@ -95,7 +95,7 @@ const Column = ({ column, onCardAdded }) => {
                             <button
                                 type="button"
                                 onClick={() => setShowAddCard(false)}
-                                            className="bg-transparent border-none cursor-pointer text-slate-500 hover:text-slate-800 text-sm"
+                                className="bg-transparent border-none cursor-pointer text-slate-500 hover:text-slate-800 text-sm"
                             >
                                 X
                             </button>

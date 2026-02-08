@@ -9,7 +9,9 @@ const connectDB = require('./config/database');
 const authRoutes = require('./routes/auth.routes');
 const boardRoutes = require('./routes/board.routes');
 const columnRoutes = require('./routes/column.routes');
+
 const cardRoutes = require('./routes/card.routes');
+const commentRoutes = require('./routes/comment.routes');
 
 dotenv.config();
 
@@ -31,7 +33,9 @@ connectDB();
 app.use('/api/auth', authRoutes);
 app.use('/api/boards', boardRoutes);
 app.use('/api/boards/:boardId/columns', columnRoutes);
+
 app.use('/api/cards', cardRoutes);
+app.use('/api/comments', commentRoutes);
 
 app.get('/', (req, res) => {
     res.send('Task Management API is running');

@@ -63,6 +63,22 @@ const boardService = {
         return response.data;
     },
 
+    // Comments
+    getComments: async (cardId) => {
+        const response = await api.get(`/comments/${cardId}`);
+        return response.data;
+    },
+
+    addComment: async (cardId, content) => {
+        const response = await api.post(`/comments/${cardId}`, { content });
+        return response.data;
+    },
+
+    deleteComment: async (commentId) => {
+        const response = await api.delete(`/comments/${commentId}`);
+        return response.data;
+    },
+
     reorderColumns: async (boardId, columnIds) => {
         const response = await api.put(`/boards/${boardId}/columns/reorder`, { columnIds });
         return response.data;

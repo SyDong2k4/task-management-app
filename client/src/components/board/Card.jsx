@@ -5,7 +5,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import boardService from '../../services/boardService';
 
-const Card = ({ card }) => {
+const Card = ({ card, onClick }) => {
   const {
     attributes,
     listeners,
@@ -95,6 +95,7 @@ const Card = ({ card }) => {
       {...attributes}
       {...listeners}
       className={`bg-white dark:bg-slate-900 group rounded-xl shadow-sm p-3 cursor-pointer transition border border-slate-200 dark:border-slate-700 hover:shadow-md hover:border-primary/80 relative ${isDragging ? 'opacity-50' : ''}`}
+      onClick={onClick}
     >
       <h4 className="m-0 text-sm font-medium text-slate-800 dark:text-slate-100 leading-tight break-words">
         {card.title}

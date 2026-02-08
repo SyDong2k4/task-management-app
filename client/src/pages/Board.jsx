@@ -23,6 +23,7 @@ import useBoardSocket from '../hooks/useBoardSocket';
 import Column from '../components/board/Column';
 import Card from '../components/board/Card'; // Import for Overlay
 import BoardHeader from '../components/board/BoardHeader';
+import CardDetailModal from '../components/board/CardDetailModal';
 import { useSocket } from '../context/SocketContext';
 import { boardReducer } from '../reducers/boardReducer';
 
@@ -51,6 +52,9 @@ const Board = () => {
     // DnD State
     const [activeId, setActiveId] = useState(null);
     const [activeItem, setActiveItem] = useState(null);
+
+    // Modal State
+    const [selectedCard, setSelectedCard] = useState(null);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -305,6 +309,41 @@ const Board = () => {
         }
     };
 
+    const handleCardClick = (card) => {
+        // Find column title for context
+        const column = board.columns.find(c => c._id === card.columnId);
+        setSelectedCard({ ...card, columnTitle: column?.title });
+    };
+
+    const handleCardUpdate = (cardId, updates) => {
+        // Optimistic update for board view
+        dispatch({ type: 'UPDATE_CARD', payload: { _id: cardId, ...updates } });
+
+        // Also update the selected card state so modal reflects changes immediately
+        setSelectedCard(prev => ({ ...prev, ...updates }));
+
+        // API call
+        boardService.updateCard(cardId, updates).catch(err => {
+            console.error(err);
+            fetchBoard(); // Revert on error
+        });
+    };
+
+    const handleCardDelete = async () => {
+        if (!selectedCard) return;
+        if (window.confirm("Delete this card?")) {
+            try {
+                // Optimistic
+                dispatch({ type: 'DELETE_CARD', payload: selectedCard._id });
+                setSelectedCard(null);
+                await boardService.deleteCard(selectedCard._id);
+            } catch (error) {
+                console.error("Failed to delete card", error);
+                fetchBoard();
+            }
+        }
+    };
+
     if (loading) return <div>Loading board...</div>;
     if (!board) return <div>Board not found</div>;
 
@@ -330,6 +369,7 @@ const Board = () => {
                                 key={column._id}
                                 column={column}
                                 onCardAdded={(card) => dispatch({ type: 'ADD_CARD', payload: card })}
+                                onCardClick={handleCardClick}
                             />
                         ))}
                     </SortableContext>
@@ -386,6 +426,14 @@ const Board = () => {
                     ) : null}
                 </DragOverlay>
             </div>
+            {selectedCard && (
+                <CardDetailModal
+                    card={selectedCard}
+                    onClose={() => setSelectedCard(null)}
+                    onUpdate={handleCardUpdate}
+                    onDelete={handleCardDelete}
+                />
+            )}
         </DndContext>
     );
 };
