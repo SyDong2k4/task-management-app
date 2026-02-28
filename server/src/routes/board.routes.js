@@ -7,7 +7,8 @@ const {
     updateBoard,
     deleteBoard,
     addMember,
-    removeMember
+    removeMember,
+    updateMemberRole
 } = require('../controllers/board.controller');
 const { protect } = require('../middleware/auth');
 
@@ -26,6 +27,7 @@ router.route('/:id/members')
     .post(addMember);
 
 router.route('/:id/members/:userId')
+    .put(updateMemberRole)
     .delete(removeMember);
 
 module.exports = router;

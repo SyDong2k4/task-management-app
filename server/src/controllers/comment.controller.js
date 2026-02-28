@@ -1,15 +1,21 @@
 const Comment = require('../models/Comment');
 const Card = require('../models/Card');
-const Board = require('../models/Board');
+const { getBoardWithRole, canEdit } = require('../utils/boardPermission');
 
 // @desc    Get comments for a card
 // @route   GET /api/comments/:cardId
-// @access  Private
+// @access  Private (any board member)
 const getComments = async (req, res) => {
     try {
+        const card = await Card.findById(req.params.cardId);
+        if (!card) return res.status(404).json({ message: 'Card not found' });
+
+        const result = await getBoardWithRole(card.boardId.toString(), req.user.id, res);
+        if (!result) return;
+
         const comments = await Comment.find({ cardId: req.params.cardId })
             .populate('author', 'username avatar')
-            .sort({ createdAt: -1 }); // Newest first
+            .sort({ createdAt: -1 });
 
         res.json(comments);
     } catch (error) {
@@ -20,7 +26,7 @@ const getComments = async (req, res) => {
 
 // @desc    Add a comment
 // @route   POST /api/comments/:cardId
-// @access  Private
+// @access  Private (member or admin)
 const addComment = async (req, res) => {
     try {
         const { content } = req.body;
@@ -31,10 +37,10 @@ const addComment = async (req, res) => {
             return res.status(404).json({ message: 'Card not found' });
         }
 
-        // Check board access
-        const board = await Board.findById(card.boardId);
-        if (!board.members.includes(req.user.id)) {
-            return res.status(403).json({ message: 'Not authorized' });
+        const result = await getBoardWithRole(card.boardId.toString(), req.user.id, res);
+        if (!result) return;
+        if (!canEdit(result.role)) {
+            return res.status(403).json({ message: 'Observers cannot add comments' });
         }
 
         const comment = await Comment.create({
@@ -48,7 +54,7 @@ const addComment = async (req, res) => {
 
         const io = req.app.get('io');
         // Emit to the board room so anyone viewing the board/card gets updates
-        io.to(card.boardId.toString()).emit('comment:added', comment);
+        io.to(`board:${card.boardId.toString()}`).emit('comment:added', comment);
 
         res.status(201).json(comment);
     } catch (error) {
@@ -59,7 +65,7 @@ const addComment = async (req, res) => {
 
 // @desc    Delete a comment
 // @route   DELETE /api/comments/:id
-// @access  Private
+// @access  Private (comment author or member/admin)
 const deleteComment = async (req, res) => {
     try {
         const comment = await Comment.findById(req.params.id);
@@ -67,8 +73,12 @@ const deleteComment = async (req, res) => {
             return res.status(404).json({ message: 'Comment not found' });
         }
 
-        // Check ownership
-        if (comment.author.toString() !== req.user.id) {
+        const card = await Card.findById(comment.cardId);
+        if (!card) return res.status(404).json({ message: 'Card not found' });
+        const result = await getBoardWithRole(card.boardId.toString(), req.user.id, res);
+        if (!result) return;
+        const isAuthor = comment.author.toString() === req.user.id;
+        if (!isAuthor && !canEdit(result.role)) {
             return res.status(403).json({ message: 'Not authorized to delete this comment' });
         }
 
@@ -78,7 +88,7 @@ const deleteComment = async (req, res) => {
         await comment.deleteOne();
 
         const io = req.app.get('io');
-        io.to(boardId).emit('comment:deleted', comment._id);
+        io.to(`board:${boardId}`).emit('comment:deleted', comment._id);
 
         res.json({ message: 'Comment removed' });
     } catch (error) {

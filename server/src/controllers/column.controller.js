@@ -1,23 +1,23 @@
 const Column = require('../models/Column');
 const Board = require('../models/Board');
+const { getBoardWithRole, canEdit } = require('../utils/boardPermission');
 
 // @desc    Create new column
 // @route   POST /api/boards/:boardId/columns
-// @access  Private
+// @access  Private (member or admin)
 const createColumn = async (req, res) => {
     try {
         const { title } = req.body;
         const { boardId } = req.params;
 
-        const board = await Board.findById(boardId);
-        if (!board) {
-            return res.status(404).json({ message: 'Board not found' });
+        const result = await getBoardWithRole(boardId, req.user.id, res);
+        if (!result) return;
+        const { role } = result;
+        if (!canEdit(role)) {
+            return res.status(403).json({ message: 'Observers cannot create columns' });
         }
 
-        // Check member access
-        if (!board.members.includes(req.user.id)) {
-            return res.status(403).json({ message: 'Not authorized' });
-        }
+        const board = result.board;
 
         // Get current count to set order
         const count = await Column.countDocuments({ boardId });
@@ -40,16 +40,21 @@ const createColumn = async (req, res) => {
 
 // @desc    Update column
 // @route   PUT /api/boards/:boardId/columns/:id
-// @access  Private
+// @access  Private (member or admin)
 const updateColumn = async (req, res) => {
     try {
-        const { title } = req.body;
         const column = await Column.findById(req.params.id);
-
         if (!column) {
             return res.status(404).json({ message: 'Column not found' });
         }
 
+        const result = await getBoardWithRole(column.boardId.toString(), req.user.id, res);
+        if (!result) return;
+        if (!canEdit(result.role)) {
+            return res.status(403).json({ message: 'Observers cannot edit columns' });
+        }
+
+        const { title } = req.body;
         column.title = title || column.title;
         await column.save();
 
@@ -65,13 +70,18 @@ const updateColumn = async (req, res) => {
 
 // @desc    Delete column
 // @route   DELETE /api/boards/:boardId/columns/:id
-// @access  Private
+// @access  Private (member or admin)
 const deleteColumn = async (req, res) => {
     try {
         const column = await Column.findById(req.params.id);
-
         if (!column) {
             return res.status(404).json({ message: 'Column not found' });
+        }
+
+        const result = await getBoardWithRole(column.boardId.toString(), req.user.id, res);
+        if (!result) return;
+        if (!canEdit(result.role)) {
+            return res.status(403).json({ message: 'Observers cannot delete columns' });
         }
 
         const boardId = column.boardId.toString();
@@ -94,11 +104,17 @@ const deleteColumn = async (req, res) => {
 
 // @desc    Reorder columns
 // @route   PUT /api/boards/:boardId/columns/reorder
-// @access  Private
+// @access  Private (member or admin)
 const reorderColumns = async (req, res) => {
     try {
-        const { columnIds } = req.body; // Array of column IDs in new order
+        const { columnIds } = req.body;
         const { boardId } = req.params;
+
+        const result = await getBoardWithRole(boardId, req.user.id, res);
+        if (!result) return;
+        if (!canEdit(result.role)) {
+            return res.status(403).json({ message: 'Observers cannot reorder columns' });
+        }
 
         if (!columnIds || !Array.isArray(columnIds)) {
             return res.status(400).json({ message: 'Invalid data' });

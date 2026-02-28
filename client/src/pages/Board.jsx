@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useReducer, useMemo } from 'react';
+import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 
 import {
@@ -24,8 +24,11 @@ import Column from '../components/board/Column';
 import Card from '../components/board/Card'; // Import for Overlay
 import BoardHeader from '../components/board/BoardHeader';
 import CardDetailModal from '../components/board/CardDetailModal';
+import BoardSettingsModal from '../components/board/BoardSettingsModal';
 import { useSocket } from '../context/SocketContext';
 import { boardReducer } from '../reducers/boardReducer';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 const dropAnimation = {
     sideEffects: defaultDropAnimationSideEffects({
@@ -39,6 +42,7 @@ const dropAnimation = {
 
 const Board = () => {
     const { boardId } = useParams();
+    const navigate = useNavigate();
     const [board, dispatch] = useReducer(boardReducer, { columns: [] }); // Init with object
     const [loading, setLoading] = useState(true);
     const socket = useSocket();
@@ -55,6 +59,13 @@ const Board = () => {
 
     // Modal State
     const [selectedCard, setSelectedCard] = useState(null);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+    // Search / filter
+    const [searchQuery, setSearchQuery] = useState('');
+    const searchInputRef = useRef(null);
+    // Track last card move we sent (để phát hiện khi 2 người cùng kéo 1 thẻ → thông báo bị ghi đè)
+    const lastMoveSentRef = useRef(null);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -90,16 +101,31 @@ const Board = () => {
     const socketHandlers = useMemo(() => ({
         'card:created': (newCard) => dispatch({ type: 'ADD_CARD', payload: newCard }),
         'card:updated': (updatedCard) => dispatch({ type: 'UPDATE_CARD', payload: updatedCard }),
-        'card:moved': ({ card, oldColumnId }) => {
+        'card:moved': (data) => {
+            const { card, oldColumnId } = data;
+            const cardId = card?._id ?? data.cardId;
+            const columnId = card?.columnId ?? data.columnId;
+            const order = card?.order ?? data.order ?? 0;
+
             dispatch({
                 type: 'MOVE_CARD',
                 payload: {
-                    cardId: card._id,
+                    cardId,
                     sourceColumnId: oldColumnId,
-                    destColumnId: card.columnId,
-                    destIndex: card.order ?? 0 // Default to 0 if order invalid
+                    destColumnId: columnId,
+                    destIndex: order
                 }
             });
+
+            // Nếu 2 người cùng kéo 1 thẻ: request xử lý sau ghi đè. Thông báo cho user vừa bị ghi đè.
+            const last = lastMoveSentRef.current;
+            if (last && String(last.cardId) === String(cardId)) {
+                const samePos = String(last.columnId) === String(columnId) && Number(last.order) === Number(order);
+                if (!samePos) {
+                    toast.info('Vị trí thẻ đã được cập nhật bởi thành viên khác.');
+                }
+                lastMoveSentRef.current = null;
+            }
         },
         'card:deleted': (cardId) => {
             dispatch({ type: 'DELETE_CARD', payload: cardId });
@@ -280,7 +306,7 @@ const Board = () => {
                             }
                         });
 
-                        // API Call
+                        lastMoveSentRef.current = { cardId: activeId, columnId: column._id, order: newIndex };
                         await boardService.moveCard(activeId, {
                             columnId: column._id,
                             order: newIndex
@@ -300,6 +326,7 @@ const Board = () => {
                 if (destCol) {
                     const destIndex = destCol.cards.findIndex(c => c._id === activeId);
 
+                    lastMoveSentRef.current = { cardId: activeId, columnId: destCol._id, order: destIndex };
                     await boardService.moveCard(activeId, {
                         columnId: destCol._id,
                         order: destIndex
@@ -344,9 +371,45 @@ const Board = () => {
         }
     };
 
+    const handleBoardUpdated = (updated) => {
+        dispatch({ type: 'UPDATE_BOARD', payload: updated });
+    };
+
+    const handleBoardDeleted = () => {
+        navigate('/dashboard');
+    };
+
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === '/' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+                e.preventDefault();
+                searchInputRef.current?.focus();
+            }
+
+            if ((e.key === 'b' || e.key === 'B') && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                setIsSettingsOpen((prev) => !prev);
+            }
+
+            if (e.key === 'Escape') {
+                if (selectedCard) {
+                    setSelectedCard(null);
+                } else if (isSettingsOpen) {
+                    setIsSettingsOpen(false);
+                } else if (showAddColumn) {
+                    setShowAddColumn(false);
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [selectedCard, isSettingsOpen, showAddColumn]);
+
     if (loading) return <div>Loading board...</div>;
     if (!board) return <div>Board not found</div>;
 
+    const canEdit = board.currentUserRole === 'admin' || board.currentUserRole === 'member';
     const columnIds = board.columns ? board.columns.map(c => c._id) : [];
 
     return (
@@ -361,21 +424,31 @@ const Board = () => {
                 className="min-h-[70vh] flex flex-col bg-cover overflow-hidden rounded-3xl border border-slate-200/80 dark:border-slate-700 shadow-md bg-slate-50/60 dark:bg-slate-900/60 transition-colors"
                 style={{ backgroundColor: board.background || undefined }}
             >
-                <BoardHeader board={board} connected={connected} />
+                <BoardHeader
+                    board={board}
+                    connected={connected}
+                    onMembersChange={(members) => dispatch({ type: 'UPDATE_BOARD', payload: { members } })}
+                    searchQuery={searchQuery}
+                    onSearchChange={setSearchQuery}
+                    searchInputRef={searchInputRef}
+                    onOpenSettings={() => setIsSettingsOpen(true)}
+                />
                 <div className="flex-1 overflow-x-auto p-4 sm:p-6 flex items-start gap-4 sm:gap-6 h-full">
                     <SortableContext items={columnIds} strategy={horizontalListSortingStrategy}>
                         {board.columns && board.columns.map(column => (
                             <Column
                                 key={column._id}
                                 column={column}
+                                canEdit={canEdit}
                                 onCardAdded={(card) => dispatch({ type: 'ADD_CARD', payload: card })}
                                 onCardClick={handleCardClick}
+                                filterQuery={searchQuery}
                             />
                         ))}
                     </SortableContext>
 
                     <div style={{ minWidth: '280px' }}>
-                        {showAddColumn ? (
+                        {canEdit && showAddColumn ? (
                             <div className="bg-slate-100/80 p-3 rounded-2xl flex flex-col gap-2 border border-slate-200/80 shadow-sm">
                                 <form onSubmit={handleAddColumn}>
                                     <input
@@ -404,14 +477,14 @@ const Board = () => {
                                     </div>
                                 </form>
                             </div>
-                        ) : (
+                        ) : canEdit ? (
                             <button
                                 className="min-w-[280px] p-4 bg-black/10 hover:bg-black/20 text-slate-600 hover:text-slate-900 text-left rounded-2xl font-medium transition-colors border border-black/5"
                                 onClick={() => setShowAddColumn(true)}
                             >
                                 + Add another list
                             </button>
-                        )}
+                        ) : null}
                     </div>
                 </div>
                 <DragOverlay dropAnimation={dropAnimation}>
@@ -429,11 +502,19 @@ const Board = () => {
             {selectedCard && (
                 <CardDetailModal
                     card={selectedCard}
+                    canEdit={canEdit}
                     onClose={() => setSelectedCard(null)}
                     onUpdate={handleCardUpdate}
                     onDelete={handleCardDelete}
                 />
             )}
+            <BoardSettingsModal
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+                board={board}
+                onUpdated={handleBoardUpdated}
+                onDelete={handleBoardDeleted}
+            />
         </DndContext>
     );
 };

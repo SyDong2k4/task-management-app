@@ -9,6 +9,7 @@ const connectDB = require('./config/database');
 const authRoutes = require('./routes/auth.routes');
 const boardRoutes = require('./routes/board.routes');
 const columnRoutes = require('./routes/column.routes');
+const userRoutes = require('./routes/user.routes');
 
 const cardRoutes = require('./routes/card.routes');
 const commentRoutes = require('./routes/comment.routes');
@@ -31,6 +32,7 @@ connectDB();
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/boards', boardRoutes);
 app.use('/api/boards/:boardId/columns', columnRoutes);
 

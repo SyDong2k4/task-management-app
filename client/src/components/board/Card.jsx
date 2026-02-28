@@ -5,7 +5,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import boardService from '../../services/boardService';
 
-const Card = ({ card, onClick }) => {
+const Card = ({ card, canEdit = true, onClick }) => {
   const {
     attributes,
     listeners,
@@ -13,7 +13,7 @@ const Card = ({ card, onClick }) => {
     transform,
     transition,
     isDragging
-  } = useSortable({ id: card._id, data: { ...card, type: 'card' } });
+  } = useSortable({ id: card._id, data: { ...card, type: 'card' }, disabled: !canEdit });
 
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(card.title);
@@ -100,7 +100,7 @@ const Card = ({ card, onClick }) => {
       <h4 className="m-0 text-sm font-medium text-slate-800 dark:text-slate-100 leading-tight break-words">
         {card.title}
       </h4>
-      {!isDragging && (
+      {canEdit && !isDragging && (
         <div className="flex gap-1 absolute top-2 right-2">
           <button
             className="bg-transparent border-none cursor-pointer p-1 rounded text-slate-500 opacity-0 transition-opacity hover:bg-slate-100 group-hover:opacity-100"

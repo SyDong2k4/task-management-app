@@ -15,9 +15,10 @@ const boardSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
+    // Trello-like: admin = full; member = edit cards/columns; observer = read-only
     members: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        role: { type: String, enum: ['admin', 'member', 'observer'], default: 'member' }
     }],
     background: {
         type: String,

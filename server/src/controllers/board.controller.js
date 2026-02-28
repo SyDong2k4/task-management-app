@@ -2,6 +2,7 @@ const Board = require('../models/Board');
 const User = require('../models/User');
 const Column = require('../models/Column');
 const Card = require('../models/Card');
+const { getMemberRole, canManageBoard, getBoardWithRole } = require('../utils/boardPermission');
 
 // @desc    Create new board
 // @route   POST /api/boards
@@ -15,7 +16,7 @@ const createBoard = async (req, res) => {
             description,
             background,
             owner: req.user.id,
-            members: [req.user.id] // Owner is also a member
+            members: [{ user: req.user.id, role: 'admin' }]
         });
 
         res.status(201).json(board);
@@ -30,9 +31,12 @@ const createBoard = async (req, res) => {
 // @access  Private
 const getBoards = async (req, res) => {
     try {
-        // Find boards where user is a member or owner
         const boards = await Board.find({
-            members: req.user.id
+            $or: [
+                { owner: req.user.id },
+                { 'members.user': req.user.id },
+                { members: req.user.id }
+            ]
         }).sort({ createdAt: -1 });
 
         res.json(boards);
@@ -47,20 +51,19 @@ const getBoards = async (req, res) => {
 // @access  Private
 const getBoardById = async (req, res) => {
     try {
-        const board = await Board.findById(req.params.id)
-            .populate('members', 'username email avatar')
-            .populate('owner', 'username email avatar');
+        const result = await getBoardWithRole(req.params.id, req.user.id, res);
+        if (!result) return;
 
-        if (!board) {
-            return res.status(404).json({ message: 'Board not found' });
-        }
+        const { board, role } = result;
+        await board.populate('members.user', 'username email avatar');
+        await board.populate('owner', 'username email avatar');
 
-        // Check if user is member
-        if (!board.members.some(member => member._id.toString() === req.user.id)) {
-            return res.status(403).json({ message: 'Not authorized to view this board' });
-        }
+        const membersForResponse = (board.members || []).map((m) => {
+            const u = (m.user && m.user._id) ? m.user : (m._id ? m : null);
+            const role = m.role || 'member';
+            return u ? { _id: u._id, username: u.username, email: u.email, avatar: u.avatar, role } : { _id: m.user || m, role };
+        });
 
-        // Fetch columns and cards
         const columns = await Column.find({ boardId: board._id }).sort('order');
         const cards = await Card.find({ boardId: board._id }).sort('order');
 
@@ -69,7 +72,13 @@ const getBoardById = async (req, res) => {
             return { ...col.toObject(), cards: colCards };
         });
 
-        res.json({ ...board.toObject(), columns: columnsWithCards });
+        res.json({
+            ...board.toObject(),
+            owner: board.owner,
+            members: membersForResponse,
+            columns: columnsWithCards,
+            currentUserRole: role
+        });
     } catch (error) {
         console.error(error);
         if (error.kind === 'ObjectId') {
@@ -81,23 +90,17 @@ const getBoardById = async (req, res) => {
 
 // @desc    Update board
 // @route   PUT /api/boards/:id
-// @access  Private
+// @access  Private (admin only)
 const updateBoard = async (req, res) => {
     try {
+        const result = await getBoardWithRole(req.params.id, req.user.id, res);
+        if (!result) return;
+        const { board, role } = result;
+        if (!canManageBoard(role)) {
+            return res.status(403).json({ message: 'Only admins can update board settings' });
+        }
+
         const { title, description, background } = req.body;
-        let board = await Board.findById(req.params.id);
-
-        if (!board) {
-            return res.status(404).json({ message: 'Board not found' });
-        }
-
-        // Check ownership or membership (usually only admins/owners can update settings, but for now allow members or owner)
-        // For strict ownership: if (board.owner.toString() !== req.user.id) ...
-        // Let's allow owner to update
-        if (board.owner.toString() !== req.user.id) {
-            return res.status(403).json({ message: 'Not authorized to update this board' });
-        }
-
         board.title = title || board.title;
         board.description = description || board.description;
         board.background = background || board.background;
@@ -113,18 +116,14 @@ const updateBoard = async (req, res) => {
 
 // @desc    Delete board
 // @route   DELETE /api/boards/:id
-// @access  Private
+// @access  Private (admin only)
 const deleteBoard = async (req, res) => {
     try {
-        const board = await Board.findById(req.params.id);
-
-        if (!board) {
-            return res.status(404).json({ message: 'Board not found' });
-        }
-
-        // Only owner can delete
-        if (board.owner.toString() !== req.user.id) {
-            return res.status(403).json({ message: 'Not authorized to delete this board' });
+        const result = await getBoardWithRole(req.params.id, req.user.id, res);
+        if (!result) return;
+        const { board, role } = result;
+        if (!canManageBoard(role)) {
+            return res.status(403).json({ message: 'Only admins can delete the board' });
         }
 
         await board.deleteOne();
@@ -138,77 +137,128 @@ const deleteBoard = async (req, res) => {
 
 // @desc    Add member to board
 // @route   POST /api/boards/:id/members
-// @access  Private
+// @access  Private (admin only)
 const addMember = async (req, res) => {
     try {
-        const { userId } = req.body; // or email
-        const board = await Board.findById(req.params.id);
-
-        if (!board) {
-            return res.status(404).json({ message: 'Board not found' });
+        const result = await getBoardWithRole(req.params.id, req.user.id, res);
+        if (!result) return;
+        const { board, role } = result;
+        if (!canManageBoard(role)) {
+            return res.status(403).json({ message: 'Only admins can add members' });
         }
 
-        // Only owner or existing members can add? Let's say only owner for now
-        if (board.owner.toString() !== req.user.id) {
-            return res.status(403).json({ message: 'Not authorized to add members' });
-        }
+        const { userId, role: newRole = 'member' } = req.body;
+        const allowedRoles = ['admin', 'member', 'observer'];
+        const roleToSet = allowedRoles.includes(newRole) ? newRole : 'member';
 
-        // Check if user exists
         const userToAdd = await User.findById(userId);
         if (!userToAdd) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // Check if already member
-        if (board.members.includes(userId)) {
+        const alreadyIn = (board.members || []).some(
+            (m) => (m.user && m.user.toString()) === userId || m.toString() === userId
+        );
+        if (alreadyIn) {
             return res.status(400).json({ message: 'User already a member' });
         }
 
-        board.members.push(userId);
+        board.members.push({ user: userId, role: roleToSet });
         await board.save();
 
-        // Populate to return updated members
-        await board.populate('members', 'username email avatar');
+        await board.populate('members.user', 'username email avatar');
+        const membersForResponse = (board.members || []).map((m) => {
+            const u = m.user && m.user._id ? m.user : null;
+            return u ? { _id: u._id, username: u.username, email: u.email, avatar: u.avatar, role: m.role || 'member' } : { _id: m.user, role: m.role || 'member' };
+        });
 
-        res.json(board.members);
+        res.json(membersForResponse);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
     }
-}
+};
 
 // @desc    Remove member from board
 // @route   DELETE /api/boards/:id/members/:userId
-// @access  Private
+// @access  Private (admin only)
 const removeMember = async (req, res) => {
     try {
-        const board = await Board.findById(req.params.id);
-
-        if (!board) {
-            return res.status(404).json({ message: 'Board not found' });
+        const result = await getBoardWithRole(req.params.id, req.user.id, res);
+        if (!result) return;
+        const { board, role } = result;
+        if (!canManageBoard(role)) {
+            return res.status(403).json({ message: 'Only admins can remove members' });
         }
 
-        // Only owner can remove members
-        if (board.owner.toString() !== req.user.id) {
-            return res.status(403).json({ message: 'Not authorized to remove members' });
-        }
-
-        // Cannot remove owner
         if (req.params.userId === board.owner.toString()) {
             return res.status(400).json({ message: 'Cannot remove owner from board' });
         }
 
-        board.members = board.members.filter(member => member.toString() !== req.params.userId);
+        board.members = (board.members || []).filter((m) => {
+            const uid = (m.user && m.user.toString && m.user.toString()) || m.toString();
+            return uid !== req.params.userId;
+        });
         await board.save();
 
-        await board.populate('members', 'username email avatar');
+        await board.populate('members.user', 'username email avatar');
+        const membersForResponse = (board.members || []).map((m) => {
+            const u = m.user && m.user._id ? m.user : null;
+            return u ? { _id: u._id, username: u.username, email: u.email, avatar: u.avatar, role: m.role || 'member' } : { _id: m.user, role: m.role || 'member' };
+        });
 
-        res.json(board.members);
+        res.json(membersForResponse);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
     }
-}
+};
+
+// @desc    Update member role
+// @route   PUT /api/boards/:id/members/:userId
+// @access  Private (admin only)
+const updateMemberRole = async (req, res) => {
+    try {
+        const result = await getBoardWithRole(req.params.id, req.user.id, res);
+        if (!result) return;
+        const { board, role } = result;
+        if (!canManageBoard(role)) {
+            return res.status(403).json({ message: 'Only admins can change member roles' });
+        }
+
+        if (req.params.userId === board.owner.toString()) {
+            return res.status(400).json({ message: 'Cannot change owner role' });
+        }
+
+        const { role: newRole } = req.body;
+        const allowedRoles = ['admin', 'member', 'observer'];
+        if (!allowedRoles.includes(newRole)) {
+            return res.status(400).json({ message: 'Invalid role' });
+        }
+
+        const memberEntry = (board.members || []).find((m) => {
+            const uid = (m.user && m.user.toString && m.user.toString()) || m.toString();
+            return uid === req.params.userId;
+        });
+        if (!memberEntry) {
+            return res.status(404).json({ message: 'Member not found' });
+        }
+
+        memberEntry.role = newRole;
+        await board.save();
+
+        await board.populate('members.user', 'username email avatar');
+        const membersForResponse = (board.members || []).map((m) => {
+            const u = m.user && m.user._id ? m.user : null;
+            return u ? { _id: u._id, username: u.username, email: u.email, avatar: u.avatar, role: m.role || 'member' } : { _id: m.user, role: m.role || 'member' };
+        });
+
+        res.json(membersForResponse);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
 
 module.exports = {
     createBoard,
@@ -217,5 +267,6 @@ module.exports = {
     updateBoard,
     deleteBoard,
     addMember,
-    removeMember
+    removeMember,
+    updateMemberRole
 };

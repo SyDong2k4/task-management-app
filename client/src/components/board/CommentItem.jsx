@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { useAuth } from '../../context/AuthContext';
 import { FaTrash } from 'react-icons/fa';
 
-const CommentItem = ({ comment, onDelete }) => {
+const CommentItem = ({ comment, canEdit = true, onDelete }) => {
     const { user } = useAuth();
     const isAuthor = user && comment.author._id === user._id;
 
@@ -35,7 +35,7 @@ const CommentItem = ({ comment, onDelete }) => {
                     {comment.content}
                 </div>
             </div>
-            {isAuthor && (
+            {canEdit && isAuthor && (
                 <button
                     onClick={() => onDelete(comment._id)}
                     className="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity self-start mt-1"

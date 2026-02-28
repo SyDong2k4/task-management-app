@@ -6,9 +6,9 @@ import { Button } from '../common/Button';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 
-const CardDetailModal = ({ card, onClose, onDelete, onUpdate }) => {
+const CardDetailModal = ({ card, canEdit = true, onClose, onDelete, onUpdate }) => {
     const { user } = useAuth();
-    const { socket } = useSocket();
+    const socket = useSocket();
     const [title, setTitle] = useState(card.title);
     const [description, setDescription] = useState(card.description || '');
     const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -43,7 +43,7 @@ const CardDetailModal = ({ card, onClose, onDelete, onUpdate }) => {
         if (!socket) return;
 
         const handleCommentAdded = (comment) => {
-            if (comment.cardId === card._id) {
+            if (comment.cardId?.toString() === card._id?.toString()) {
                 setComments((prev) => [comment, ...prev]);
             }
         };
@@ -137,7 +137,7 @@ const CardDetailModal = ({ card, onClose, onDelete, onUpdate }) => {
                             <FaAlignLeft size={20} /> {/* Icon placeholder for Card */}
                         </div>
                         <div className="flex-1">
-                            {isEditingTitle ? (
+                            {canEdit && isEditingTitle ? (
                                 <input
                                     ref={titleInputRef}
                                     value={title}
@@ -148,8 +148,8 @@ const CardDetailModal = ({ card, onClose, onDelete, onUpdate }) => {
                                 />
                             ) : (
                                 <h2
-                                    onClick={() => setIsEditingTitle(true)}
-                                    className="text-xl font-bold text-slate-800 cursor-pointer hover:bg-slate-100 rounded px-2 py-1 -ml-2"
+                                    onClick={() => canEdit && setIsEditingTitle(true)}
+                                    className={`text-xl font-bold text-slate-800 rounded px-2 py-1 -ml-2 ${canEdit ? 'cursor-pointer hover:bg-slate-100' : ''}`}
                                 >
                                     {title}
                                 </h2>
@@ -170,7 +170,7 @@ const CardDetailModal = ({ card, onClose, onDelete, onUpdate }) => {
                         </div>
                         <div className="flex-1">
                             <h3 className="text-sm font-semibold text-slate-700 mb-2">Description</h3>
-                            {isEditingDesc ? (
+                            {canEdit && isEditingDesc ? (
                                 <div className="space-y-2">
                                     <textarea
                                         ref={descInputRef}
@@ -194,11 +194,10 @@ const CardDetailModal = ({ card, onClose, onDelete, onUpdate }) => {
                                 </div>
                             ) : (
                                 <div
-                                    onClick={() => setIsEditingDesc(true)}
-                                    className={`min-h-[60px] p-3 rounded cursor-pointer hover:bg-slate-100 ${description ? 'text-slate-700' : 'text-slate-400 italic bg-slate-50'
-                                        }`}
+                                    onClick={() => canEdit && setIsEditingDesc(true)}
+                                    className={`min-h-[60px] p-3 rounded ${description ? 'text-slate-700' : 'text-slate-400 italic bg-slate-50'} ${canEdit ? 'cursor-pointer hover:bg-slate-100' : ''}`}
                                 >
-                                    {description || "Add a more detailed description..."}
+                                    {description || (canEdit ? "Add a more detailed description..." : '')}
                                 </div>
                             )}
                         </div>
@@ -212,7 +211,8 @@ const CardDetailModal = ({ card, onClose, onDelete, onUpdate }) => {
                         <div className="flex-1">
                             <h3 className="text-sm font-semibold text-slate-700 mb-4">Activity</h3>
 
-                            {/* Add Comment */}
+                            {/* Add Comment - only for member/admin */}
+                            {canEdit && (
                             <div className="flex gap-3 mb-6">
                                 <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-sm flex-shrink-0">
                                     {user?.avatar ? (
@@ -236,11 +236,18 @@ const CardDetailModal = ({ card, onClose, onDelete, onUpdate }) => {
                                             }}
                                         />
                                         {newComment.trim() && (
-                                            <Button type="submit" size="sm" disabled={!newComment.trim()}>Sample</Button>
+                                            <Button
+                                                type="submit"
+                                                className="px-3 py-1.5 text-sm mt-1"
+                                                disabled={!newComment.trim()}
+                                            >
+                                                Comment
+                                            </Button>
                                         )}
                                     </form>
                                 </div>
                             </div>
+                            )}
 
                             {/* Comment List */}
                             <div className="space-y-1">
@@ -251,6 +258,7 @@ const CardDetailModal = ({ card, onClose, onDelete, onUpdate }) => {
                                         <CommentItem
                                             key={comment._id}
                                             comment={comment}
+                                            canEdit={canEdit}
                                             onDelete={handleDeleteComment}
                                         />
                                     ))
@@ -264,6 +272,7 @@ const CardDetailModal = ({ card, onClose, onDelete, onUpdate }) => {
 
                 {/* Sidebar */}
                 <div className="w-full md:w-48 bg-slate-50 p-4 border-l border-slate-200">
+                    {canEdit && (
                     <div className="mb-4">
                         <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Actions</h4>
                         <button
@@ -273,6 +282,7 @@ const CardDetailModal = ({ card, onClose, onDelete, onUpdate }) => {
                             <FaTrash size={14} /> Delete Card
                         </button>
                     </div>
+                    )}
 
                     {/* Add more sidebar items here later: Members, Labels, Dates */}
                     <div>

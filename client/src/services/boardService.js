@@ -82,6 +82,22 @@ const boardService = {
     reorderColumns: async (boardId, columnIds) => {
         const response = await api.put(`/boards/${boardId}/columns/reorder`, { columnIds });
         return response.data;
+    },
+
+    // Members (Trello-like roles: admin, member, observer)
+    addMember: async (boardId, userId, role = 'member') => {
+        const response = await api.post(`/boards/${boardId}/members`, { userId, role });
+        return response.data;
+    },
+
+    updateMemberRole: async (boardId, userId, role) => {
+        const response = await api.put(`/boards/${boardId}/members/${userId}`, { role });
+        return response.data;
+    },
+
+    removeMember: async (boardId, userId) => {
+        const response = await api.delete(`/boards/${boardId}/members/${userId}`);
+        return response.data;
     }
 };
 

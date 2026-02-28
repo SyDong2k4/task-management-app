@@ -9,13 +9,12 @@ import boardService from '../../services/boardService';
 
 
 
-const Column = ({ column, onCardAdded, onCardClick }) => {
+const Column = ({ column, canEdit = true, onCardAdded, onCardClick, filterQuery }) => {
     const { boardId } = useParams();
     const [showAddCard, setShowAddCard] = useState(false);
     const [newCardTitle, setNewCardTitle] = useState('');
     const [loading, setLoading] = useState(false);
 
-    // Sortable for the Column itself
     const {
         attributes,
         listeners,
@@ -23,14 +22,31 @@ const Column = ({ column, onCardAdded, onCardClick }) => {
         transform,
         transition,
         isDragging
-    } = useSortable({ id: column._id, data: { ...column, type: 'column' } });
+    } = useSortable({ id: column._id, data: { ...column, type: 'column' }, disabled: !canEdit });
 
     const style = {
         transform: CSS.Translate.toString(transform),
         transition,
     };
 
-    const cardIds = useMemo(() => column.cards?.map(c => c._id) || [], [column.cards]);
+    const normalizedQuery = (filterQuery || '').trim().toLowerCase();
+
+    const filteredCards = useMemo(() => {
+        if (!normalizedQuery) return column.cards || [];
+        return (column.cards || []).filter((card) => {
+            const title = card.title || '';
+            const description = card.description || '';
+            return (
+                title.toLowerCase().includes(normalizedQuery) ||
+                description.toLowerCase().includes(normalizedQuery)
+            );
+        });
+    }, [column.cards, normalizedQuery]);
+
+    const cardIds = useMemo(
+        () => filteredCards.map((c) => c._id),
+        [filteredCards]
+    );
 
     const handleAddCard = async (e) => {
         e.preventDefault();
@@ -62,18 +78,18 @@ const Column = ({ column, onCardAdded, onCardClick }) => {
             {/* Pass listeners to Header if we want drag handle there only. 
                  But simplifying: make header handle drag. */}
             <div {...listeners}>
-                <ColumnHeader title={column.title} tasksCount={column.cards?.length || 0} columnId={column._id} />
+                <ColumnHeader title={column.title} tasksCount={column.cards?.length || 0} columnId={column._id} canEdit={canEdit} />
             </div>
 
             <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
                 <div className="p-2 flex-1 overflow-y-auto min-h-[50px] space-y-2">
-                    {column.cards && column.cards.map(card => (
-                        <Card key={card._id} card={card} onClick={() => onCardClick(card)} />
+                    {filteredCards.map((card) => (
+                        <Card key={card._id} card={card} canEdit={canEdit} onClick={() => onCardClick && onCardClick(card)} />
                     ))}
                 </div>
             </SortableContext>
 
-            {showAddCard ? (
+            {canEdit && showAddCard ? (
                 <div className="p-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/70 rounded-b-2xl">
                     <form onSubmit={handleAddCard}>
                         <input
@@ -102,14 +118,14 @@ const Column = ({ column, onCardAdded, onCardClick }) => {
                         </div>
                     </form>
                 </div>
-            ) : (
+            ) : canEdit ? (
                 <button
                     className="bg-transparent border-none text-slate-500 p-3 text-left cursor-pointer rounded-b-2xl text-sm hover:bg-slate-200/80 hover:text-slate-800 transition-colors w-full"
                     onClick={() => setShowAddCard(true)}
                 >
                     + Add a card
                 </button>
-            )}
+            ) : null}
         </div>
     );
 };

@@ -1,18 +1,18 @@
 const Card = require('../models/Card');
-const Column = require('../models/Column');
 const Board = require('../models/Board');
+const { getBoardWithRole, canEdit } = require('../utils/boardPermission');
 
 // @desc    Create new card
 // @route   POST /api/cards
-// @access  Private
+// @access  Private (member or admin)
 const createCard = async (req, res) => {
     try {
         const { title, columnId, boardId } = req.body;
 
-        // Verify board access
-        const board = await Board.findById(boardId);
-        if (!board.members.includes(req.user.id)) {
-            return res.status(403).json({ message: 'Not authorized' });
+        const result = await getBoardWithRole(boardId, req.user.id, res);
+        if (!result) return;
+        if (!canEdit(result.role)) {
+            return res.status(403).json({ message: 'Observers cannot create cards' });
         }
 
         const count = await Card.countDocuments({ columnId });
@@ -41,12 +41,14 @@ const getCard = async (req, res) => {
     try {
         const card = await Card.findById(req.params.id)
             .populate('assignees', 'username avatar')
-            .populate('columnId')
-        // Comments would be fetched separately or populated via virtuals if setup
+            .populate('columnId');
 
         if (!card) {
             return res.status(404).json({ message: 'Card not found' });
         }
+
+        const result = await getBoardWithRole(card.boardId.toString(), req.user.id, res);
+        if (!result) return;
 
         res.json(card);
     } catch (error) {
@@ -57,12 +59,18 @@ const getCard = async (req, res) => {
 
 // @desc    Update card
 // @route   PUT /api/cards/:id
-// @access  Private
+// @access  Private (member or admin)
 const updateCard = async (req, res) => {
     try {
         const card = await Card.findById(req.params.id);
         if (!card) {
             return res.status(404).json({ message: 'Card not found' });
+        }
+
+        const result = await getBoardWithRole(card.boardId.toString(), req.user.id, res);
+        if (!result) return;
+        if (!canEdit(result.role)) {
+            return res.status(403).json({ message: 'Observers cannot edit cards' });
         }
 
         const { title, description, dueDate, assignees, labels } = req.body;
@@ -87,15 +95,21 @@ const updateCard = async (req, res) => {
 
 // @desc    Move card (between columns or reorder)
 // @route   PUT /api/cards/:id/move
-// @access  Private
+// @access  Private (member or admin)
 const moveCard = async (req, res) => {
     try {
-        const { columnId, order } = req.body;
         const card = await Card.findById(req.params.id);
-
         if (!card) {
             return res.status(404).json({ message: 'Card not found' });
         }
+
+        const result = await getBoardWithRole(card.boardId.toString(), req.user.id, res);
+        if (!result) return;
+        if (!canEdit(result.role)) {
+            return res.status(403).json({ message: 'Observers cannot move cards' });
+        }
+
+        const { columnId, order } = req.body;
 
         // Keep old values to detect changes
         const oldColumnId = card.columnId;
@@ -105,6 +119,7 @@ const moveCard = async (req, res) => {
         card.order = order !== undefined ? order : card.order;
 
         await card.save();
+        // Lưu ý: Nếu 2 user cùng kéo 1 thẻ, request xử lý sau sẽ ghi đè (last write wins). Client có thể toast khi nhận card:moved khác với vị trí mình vừa gửi.
 
         // If moved columns, we might need to notify about that
         const io = req.app.get('io');
@@ -125,13 +140,19 @@ const moveCard = async (req, res) => {
 
 // @desc    Delete card
 // @route   DELETE /api/cards/:id
-// @access  Private
+// @access  Private (member or admin)
 const deleteCard = async (req, res) => {
     try {
         const card = await Card.findById(req.params.id);
         if (!card) return res.status(404).json({ message: 'Card not found' });
 
-        const boardId = card.boardId.toString(); // Save before delete
+        const result = await getBoardWithRole(card.boardId.toString(), req.user.id, res);
+        if (!result) return;
+        if (!canEdit(result.role)) {
+            return res.status(403).json({ message: 'Observers cannot delete cards' });
+        }
+
+        const boardId = card.boardId.toString();
         const cardId = card._id;
 
         await card.deleteOne();

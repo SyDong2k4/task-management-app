@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import boardService from '../../services/boardService';
 
-const ColumnHeader = ({ title, tasksCount, columnId }) => {
+const ColumnHeader = ({ title, tasksCount, columnId, canEdit = true }) => {
   const { boardId } = useParams();
   const [isEditing, setIsEditing] = useState(false);
   const [newTitle, setNewTitle] = useState(title);
@@ -47,7 +47,7 @@ const ColumnHeader = ({ title, tasksCount, columnId }) => {
 
   return (
     <div className="p-4 font-semibold text-slate-800 flex justify-between items-center cursor-grab active:cursor-grabbing relative group">
-      {isEditing ? (
+      {canEdit && isEditing ? (
         <input
           autoFocus
           value={newTitle}
@@ -58,8 +58,8 @@ const ColumnHeader = ({ title, tasksCount, columnId }) => {
         />
       ) : (
         <div
-          className="flex-1 whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer"
-          onClick={() => setIsEditing(true)}
+          className={`flex-1 whitespace-nowrap overflow-hidden text-ellipsis ${canEdit ? 'cursor-pointer' : ''}`}
+          onClick={() => canEdit && setIsEditing(true)}
         >
           {title}
         </div>
@@ -67,6 +67,7 @@ const ColumnHeader = ({ title, tasksCount, columnId }) => {
 
       <div className="text-xs text-slate-500 mx-2">{tasksCount}</div>
 
+      {canEdit && (
       <div className="opacity-100 relative" ref={menuRef}>
         <button
           className="bg-transparent border-none cursor-pointer p-1 rounded text-slate-500 hover:bg-black/10 hover:text-slate-800"
@@ -91,6 +92,7 @@ const ColumnHeader = ({ title, tasksCount, columnId }) => {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 };
