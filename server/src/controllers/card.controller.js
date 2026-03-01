@@ -25,7 +25,7 @@ const createCard = async (req, res) => {
         });
 
         const io = req.app.get('io');
-        io.to(boardId).emit('card:created', card);
+        io.to(`board:${boardId}`).emit('card:created', card);
 
         res.status(201).json(card);
     } catch (error) {
@@ -84,7 +84,7 @@ const updateCard = async (req, res) => {
         await card.save();
 
         const io = req.app.get('io');
-        io.to(card.boardId.toString()).emit('card:updated', card);
+        io.to(`board:${card.boardId.toString()}`).emit('card:updated', card);
 
         res.json(card);
     } catch (error) {
@@ -123,7 +123,7 @@ const moveCard = async (req, res) => {
 
         // If moved columns, we might need to notify about that
         const io = req.app.get('io');
-        io.to(card.boardId.toString()).emit('card:moved', {
+        io.to(`board:${card.boardId.toString()}`).emit('card:moved', {
             cardId: card._id,
             columnId: card.columnId,
             oldColumnId,
@@ -158,7 +158,7 @@ const deleteCard = async (req, res) => {
         await card.deleteOne();
 
         const io = req.app.get('io');
-        io.to(boardId).emit('card:deleted', cardId);
+        io.to(`board:${boardId}`).emit('card:deleted', cardId);
 
         res.json({ message: 'Card removed' });
     } catch (error) {

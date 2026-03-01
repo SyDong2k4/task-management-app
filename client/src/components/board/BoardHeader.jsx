@@ -42,7 +42,6 @@ const BoardHeader = ({
             />
           </div>
           {canManageBoard && (
-          {canManageBoard && (
             <button
               type="button"
               onClick={onOpenSettings}
@@ -51,7 +50,6 @@ const BoardHeader = ({
               <FaCog size={10} />
               <span className="hidden sm:inline">Settings</span>
             </button>
-          )}
           )}
         </div>
 

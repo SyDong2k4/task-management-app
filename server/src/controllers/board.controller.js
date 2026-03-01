@@ -34,8 +34,7 @@ const getBoards = async (req, res) => {
         const boards = await Board.find({
             $or: [
                 { owner: req.user.id },
-                { 'members.user': req.user.id },
-                { members: req.user.id }
+                { 'members.user': req.user.id }
             ]
         }).sort({ createdAt: -1 });
 

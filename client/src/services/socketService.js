@@ -12,7 +12,7 @@ class SocketService {
 
         this.socket = io(SOCKET_URL, {
             auth: { token },
-            transports: ['websocket', 'polling'] // Explicit transports often help
+            transports: ['websocket', 'polling'] 
         });
 
         this.socket.on('connect', () => {

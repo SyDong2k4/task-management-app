@@ -29,7 +29,7 @@ const createColumn = async (req, res) => {
         });
 
         const io = req.app.get('io');
-        io.to(boardId).emit('column:created', column);
+        io.to(`board:${boardId}`).emit('column:created', column);
 
         res.status(201).json(column);
     } catch (error) {
@@ -59,7 +59,7 @@ const updateColumn = async (req, res) => {
         await column.save();
 
         const io = req.app.get('io');
-        io.to(column.boardId.toString()).emit('column:updated', column);
+        io.to(`board:${column.boardId.toString()}`).emit('column:updated', column);
 
         res.json(column);
     } catch (error) {
@@ -93,7 +93,7 @@ const deleteColumn = async (req, res) => {
         // await Card.deleteMany({ columnId: req.params.id });
 
         const io = req.app.get('io');
-        io.to(boardId).emit('column:deleted', columnId);
+        io.to(`board:${boardId}`).emit('column:deleted', columnId);
 
         res.json({ message: 'Column removed' });
     } catch (error) {
@@ -127,7 +127,7 @@ const reorderColumns = async (req, res) => {
         await Promise.all(updates);
 
         const io = req.app.get('io');
-        io.to(boardId).emit('column:reordered', columnIds);
+        io.to(`board:${boardId}`).emit('column:reordered', columnIds);
 
         res.json({ message: 'Columns reordered' });
     } catch (error) {
