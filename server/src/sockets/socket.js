@@ -4,9 +4,13 @@ const User = require('../models/User');
 const boardSocket = require('./board.socket');
 
 const initSocket = (server) => {
+    const allowedOrigin = process.env.CLIENT_URL
+        ? process.env.CLIENT_URL.replace(/\/$/, "")
+        : "*";
+
     const io = new Server(server, {
         cors: {
-            origin: process.env.CLIENT_URL || "*",
+            origin: allowedOrigin,
             methods: ["GET", "POST", "PUT", "DELETE"],
         },
     });
