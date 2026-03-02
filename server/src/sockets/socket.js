@@ -42,6 +42,13 @@ const initSocket = (server) => {
     io.on('connection', (socket) => {
         console.log(`Socket connected: ${socket.id}, User: ${socket.user.username}`);
 
+        // Join a user-specific room so we can send
+        // dashboard-level events like "you were added to a board"
+        if (socket.user && socket.user._id) {
+            const userRoom = `user:${socket.user._id.toString()}`;
+            socket.join(userRoom);
+        }
+
         boardSocket(io, socket);
 
         socket.on('disconnect', () => {

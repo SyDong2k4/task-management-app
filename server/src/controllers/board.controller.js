@@ -171,6 +171,12 @@ const addMember = async (req, res) => {
             return u ? { _id: u._id, username: u.username, email: u.email, avatar: u.avatar, role: m.role || 'member' } : { _id: m.user, role: m.role || 'member' };
         });
 
+        // Notify the invited user that their boards list changed
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`user:${userId}`).emit('boards:updated');
+        }
+
         res.json(membersForResponse);
     } catch (error) {
         console.error(error);
@@ -205,6 +211,12 @@ const removeMember = async (req, res) => {
             const u = m.user && m.user._id ? m.user : null;
             return u ? { _id: u._id, username: u.username, email: u.email, avatar: u.avatar, role: m.role || 'member' } : { _id: m.user, role: m.role || 'member' };
         });
+
+        // Notify the removed user that their boards list changed
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`user:${req.params.userId}`).emit('boards:updated');
+        }
 
         res.json(membersForResponse);
     } catch (error) {
@@ -251,6 +263,12 @@ const updateMemberRole = async (req, res) => {
             const u = m.user && m.user._id ? m.user : null;
             return u ? { _id: u._id, username: u.username, email: u.email, avatar: u.avatar, role: m.role || 'member' } : { _id: m.user, role: m.role || 'member' };
         });
+
+        // Notify the affected user that their boards list (and permissions) changed
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`user:${req.params.userId}`).emit('boards:updated');
+        }
 
         res.json(membersForResponse);
     } catch (error) {

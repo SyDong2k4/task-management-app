@@ -15,7 +15,7 @@ const BoardHeader = ({
 
   return (
     <div className="px-4 md:px-6 py-3 md:py-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 flex flex-col md:flex-row md:items-center md:justify-between gap-3 rounded-t-2xl shadow-sm transition-colors">
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-3 flex-shrink-0">
         <div>
           <h1 className="text-lg md:text-xl font-bold text-slate-800 dark:text-slate-100">
             {board?.title}
@@ -29,7 +29,7 @@ const BoardHeader = ({
       </div>
 
       <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 md:gap-4">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full md:w-auto">
           <div className="relative w-full md:w-56">
             <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
             <input
@@ -53,7 +53,7 @@ const BoardHeader = ({
           )}
         </div>
 
-        <div className="flex items-center gap-3 md:gap-4 justify-between">
+        <div className="flex items-center gap-3 md:gap-4 justify-between md:justify-end w-full">
           <BoardMembers board={board} onMembersChange={onMembersChange} />
           <div className="flex items-center gap-2 text-[11px] md:text-xs text-slate-500 dark:text-slate-400">
             <div className={`w-2 h-2 rounded-full ${connected ? 'bg-emerald-400' : 'bg-red-500'}`} />

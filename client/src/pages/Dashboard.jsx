@@ -1,18 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import BoardList from '../components/dashboard/BoardList';
 import CreateBoardModal from '../components/dashboard/CreateBoardModal';
 import boardService from '../services/boardService';
+import useSocketEvent from '../hooks/useSocketEvent';
 
 const Dashboard = () => {
     const [boards, setBoards] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchBoards();
-    }, []);
-
-    const fetchBoards = async () => {
+    const fetchBoards = useCallback(async () => {
         try {
             const data = await boardService.getAllBoards();
             setBoards(data);
@@ -21,7 +18,16 @@ const Dashboard = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        fetchBoards();
+    }, [fetchBoards]);
+
+    // Re-fetch boards when server notifies that this user's boards changed
+    useSocketEvent('boards:updated', () => {
+        fetchBoards();
+    });
 
     const handleBoardCreated = (newBoard) => {
         setBoards([...boards, newBoard]);

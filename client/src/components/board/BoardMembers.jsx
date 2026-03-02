@@ -140,7 +140,7 @@ const BoardMembers = ({ board, onMembersChange }) => {
           </button>
 
           {isOpen && (
-            <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg p-3 z-10">
+            <div className="absolute right-0 mt-2 w-64 max-w-[min(16rem,calc(100vw-3rem))] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg p-3 z-50">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-xs text-slate-500">Add as:</span>
                 <select
